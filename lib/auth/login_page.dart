@@ -30,22 +30,33 @@ class _LoginPageState extends State<LoginPage> {
       if (user != null) {
         // 2. Ambil Role dari tabel 'profiles' (sesuaikan nama tabelmu)
         final userData = await Supabase.instance.client
-            .from('profiles')
+            .from('users')
             .select('role')
-            .eq('id', user.id)
-            .single();
+            .eq('id_user', user.id)
+            .maybeSingle();
+
+        if (userData == null) {
+          _showErrorBanner();
+          return;
+        }
 
         String role = userData['role'];
 
         // 3. Navigasi Berdasarkan Role
         if (!mounted) return;
-        
+
         if (role == 'petugas') {
           // Arahkan ke halaman utama Petugas
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PetugasMainScreen()));
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const PetugasMainScreen()),
+          );
         } else if (role == 'peminjam') {
           // Arahkan ke halaman utama Peminjam
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationPeminjam()));
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const MainNavigationPeminjam()),
+          );
         }
       }
     } catch (e) {
@@ -71,8 +82,17 @@ class _LoginPageState extends State<LoginPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text("error", style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.bold)),
-              Text("Terjadi kesalahan / Data tidak sesuai", style: GoogleFonts.poppins(color: Colors.black54, fontSize: 12)),
+              Text(
+                "error",
+                style: GoogleFonts.poppins(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                "Terjadi kesalahan / Data tidak sesuai",
+                style: GoogleFonts.poppins(color: Colors.black54, fontSize: 12),
+              ),
             ],
           ),
         ),
@@ -92,14 +112,21 @@ class _LoginPageState extends State<LoginPage> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(30),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, spreadRadius: 5)
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                ),
               ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Logo EduGarage
-                Image.asset('assets/logo.png', height: 120), // Pastikan file ada di assets
+                Image.asset(
+                  'assets/logo.png',
+                  height: 120,
+                ), // Pastikan file ada di assets
                 const SizedBox(height: 10),
                 Text(
                   "SISTEM AKSES BENGKEL",
@@ -138,7 +165,9 @@ class _LoginPageState extends State<LoginPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A314D),
                     minimumSize: const Size(double.infinity, 55),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: _isLoading ? null : _handleLogin,
                   child: _isLoading
@@ -148,10 +177,17 @@ class _LoginPageState extends State<LoginPage> {
                           children: [
                             Text(
                               "MASUK SEKARANG",
-                              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white),
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                             const SizedBox(width: 10),
-                            const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                            const Icon(
+                              Icons.arrow_forward,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ],
                         ),
                 ),
@@ -170,7 +206,11 @@ class _LoginPageState extends State<LoginPage> {
         padding: const EdgeInsets.only(bottom: 8.0, left: 5),
         child: Text(
           text,
-          style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue.shade800,
+          ),
         ),
       ),
     );
@@ -198,12 +238,20 @@ class _LoginPageState extends State<LoginPage> {
           prefixIcon: Icon(icon, color: Colors.grey, size: 20),
           suffixIcon: isPassword
               ? IconButton(
-                  icon: Icon(obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 20),
+                  icon: Icon(
+                    obscure
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 20,
+                  ),
                   onPressed: onToggle,
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 15,
+            horizontal: 20,
+          ),
         ),
       ),
     );
