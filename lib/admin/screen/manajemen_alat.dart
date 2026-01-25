@@ -16,10 +16,52 @@ class ManajemenAlatPage extends StatefulWidget {
 
 class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
   bool _showNotification = false;
+  String _notifMessage = "";
   int _currentIndex = 0;
 
-  void _triggerNotification() {
-    setState(() => _showNotification = true);
+  List<Map<String, dynamic>> _allAlat = [
+    {
+      "name": "Tang Kombinasi",
+      "kategori": "ALAT TANGAN",
+      "stok": "5 Unit",
+      "kondisi": "Baik",
+      "desc": "Tang serbaguna",
+    },
+    {
+      "name": "Dongkrak Buaya",
+      "kategori": "SERVIS",
+      "stok": "8 Unit",
+      "kondisi": "Rusak Ringan",
+      "desc": "Dongkrak hidrolik",
+    },
+  ];
+
+void _openForm({Map<String, dynamic>? item, int? index}) {
+    showDialog(
+      context: context,
+      builder: (_) => AddAlat(
+        initialData: item,
+        onSaveSuccess: (newData) {
+          setState(() {
+            if (index != null) {
+              _allAlat[index] = newData;
+              _notifMessage = "Berhasil memperbarui ${newData['name']}";
+            } else {
+              _allAlat.add(newData);
+              _notifMessage = "Berhasil menambah ${newData['name']}";
+            }
+          });
+          _triggerNotification(_notifMessage); // Kirim pesan ke notif
+        },
+      ),
+    );
+  }
+
+  void _triggerNotification(String message) {
+    setState(() {
+      _notifMessage = message; // Update pesan yang akan muncul di snackbar/overlay
+      _showNotification = true;
+    });
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) setState(() => _showNotification = false);
     });
@@ -29,36 +71,49 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Konfirmasi Hapus",
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 30),
+            Text(
+              "Konfirmasi Hapus",
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 10),
-              Text("Yakin ingin menghapus $name?", textAlign: TextAlign.center),
-              const Divider(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  TextButton(
+            ),
+            const SizedBox(height: 10),
+            Text(
+              "Yakin ingin menghapus?",
+              style: GoogleFonts.poppins(color: Colors.grey, fontSize: 14),
+            ),
+            const SizedBox(height: 25),
+            const Divider(height: 1, thickness: 1),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: Text(
                       "Batal",
-                      style: GoogleFonts.poppins(color: Colors.blue),
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFF3B71B9),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  TextButton(
+                ),
+                Container(
+                  width: 1,
+                  height: 50,
+                  color: Colors.grey.shade300,
+                ), // Garis vertikal tengah
+                Expanded(
+                  child: TextButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      _triggerNotification();
+                      _triggerNotification(name);
                     },
                     child: Text(
                       "Hapus",
@@ -68,13 +123,41 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
                       ),
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildSquareBtn(
+    IconData icon,
+    VoidCallback onTap, {
+    Color color = const Color(0xFFE8EEF5),
+    Color iconColor = Colors.black87,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: iconColor, size: 20),
+      ),
+    );
+  }
+
+  void _deleteAlat(int index) {
+    String deletedName = _allAlat[index]['name'];
+    setState(() {
+      _allAlat.removeAt(index);
+      _notifMessage = "Berhasil menghapus $deletedName";
+    });
   }
 
   @override
@@ -114,24 +197,7 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
                     // Di dalam ManajemenAlatPage
                     _buildSquareBtn(
                       Icons.add,
-                      () {
-                        showDialog(
-                          context: context,
-                          builder: (_) => AddAlat(
-                            onSaveSuccess: (nama) {
-                              // Trigger notifikasi yang sudah Anda buat sebelumnya
-                              setState(() {
-                                _showNotification = true;
-                                // Anda bisa mengubah teks notifikasi secara dinamis jika mau
-                              });
-                              Future.delayed(const Duration(seconds: 3), () {
-                                if (mounted)
-                                  setState(() => _showNotification = false);
-                              });
-                            },
-                          ),
-                        );
-                      },
+                      () => _openForm(),
                       color: const Color(0xFF3B71B9),
                       iconColor: Colors.white,
                     ),
@@ -164,7 +230,10 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: AppColors.abumud, width: 1),
+                            borderSide: BorderSide(
+                              color: AppColors.abumud,
+                              width: 1,
+                            ),
                           ),
                         ),
                       ),
@@ -175,82 +244,60 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
                 ),
               ),
               Expanded(
-                child: ListView(
+                child: ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 25),
-                  children: [
-                    AlatCard(
-                      name: "Tang Kombinasi",
-                      kategoriName: "ALAT TANGAN",
-                      stok: "5 Unit",
-                      kondisi: "Baik",
-                      onDelete: () => _showDeleteConfirmation("Tang Kombinasi"),
-                      onTapDetail: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const DetailAlatPage(),
-                        ),
-                      ),
-                    ),
-                    AlatCard(
-                      name: "Dongkrak Buaya",
-                      kategoriName: "SERVIS",
-                      stok: "8 Unit",
-                      kondisi: "Rusak Ringan",
-                      onDelete: () => _showDeleteConfirmation("Dongkrak Buaya"),
-                      onTapDetail: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const DetailAlatPage(),
-                        ),
-                      ),
-                    ),
-                    AlatCard(
-                      name: "Kunci Momen",
-                      kategoriName: "ALAT UKUR",
-                      stok: "2 Unit",
-                      kondisi: "Rusak Berat",
-                      onDelete: () => _showDeleteConfirmation("Kunci Momen"),
-                      onTapDetail: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const DetailAlatPage(),
-                        ),
-                      ),
-                    ),
-                  ],
+                  itemCount: _allAlat.length,
+                  itemBuilder: (context, index) {
+                    final item = _allAlat[index];
+                    return AlatCard(
+                      name: item['name'],
+                      kategoriName: item['kategori'],
+                      stok: item['stok'],
+                      kondisi: item['kondisi'],
+                      onDelete: () {
+                        _showDeleteConfirmation(item['name']);
+                        _deleteAlat(index);
+                      }, // Panggil konfirmasi hapus
+                      onTapDetail: () => _openForm(
+                        item: item,
+                        index: index,
+                      ), // Sekarang Tap Detail berfungsi sebagai Edit
+                    );
+                  },
                 ),
               ),
             ],
           ),
-          // Logika Notifikasi Melayang
           if (_showNotification)
             Positioned(
-              top: 50, // Mengatur posisi munculnya notifikasi dari atas layar
-              left: 20,
-              right: 20,
+              top: 60,
+              left: 25,
+              right: 25,
               child: Material(
-                elevation: 10,
+                elevation: 5,
                 borderRadius: BorderRadius.circular(15),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 15,
-                  ),
+                  padding: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
-                    color: const Color(
-                      0xFF162D4A,
-                    ).withOpacity(0.95), // Biru gelap transparan
+                    color: Colors.white.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.check_circle, color: Colors.white),
-                      SizedBox(width: 15),
                       Text(
-                        "Berhasil menghapus 1 user",
+                        "Admin 01",
                         style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _notifMessage,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: Colors.black87,
                         ),
                       ),
                     ],
@@ -259,26 +306,6 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
               ),
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSquareBtn(
-    IconData icon,
-    VoidCallback onTap, {
-    Color color = const Color(0xFFE8EEF5),
-    Color iconColor = Colors.black87,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: iconColor, size: 20),
       ),
     );
   }

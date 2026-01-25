@@ -17,7 +17,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _pages = [
     const BerandaPage(),
     const AdminPage(),
-    const Center(child: Text("Halaman Transaksi")),
+     const AdminPage(),
     const Center(child: Text("Halaman Riwayat")),
   ];
 
