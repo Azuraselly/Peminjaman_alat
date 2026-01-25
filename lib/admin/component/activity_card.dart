@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inventory_alat/colors.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ActivityCard extends StatelessWidget {
   const ActivityCard({super.key});
@@ -6,30 +8,34 @@ class ActivityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
+      width: 364,
+      height: 184,
       padding: const EdgeInsets.all(25),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF4A90E2), Color(0xFF162D4A)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(35),
+        borderRadius: BorderRadius.circular(45),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Aktifitas Terkini", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+           Text("Aktifitas Terkini", style: GoogleFonts.poppins(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
           const SizedBox(height: 5),
-          const Text("Ada 5 peminjaman baru hari ini", style: TextStyle(color: Colors.white70, fontSize: 13)),
+           Text("Ada 5 peminjaman baru hari ini", style: GoogleFonts.poppins(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {},
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white.withOpacity(0.25),
-              minimumSize: const Size(double.infinity, 45),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              backgroundColor: Colors.white.withOpacity(0.50),
+              minimumSize: const Size(276, 50),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             ),
-            child: const Text("CEK LAPORAN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text("CEK LAPORAN", style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
           )
         ],
       ),

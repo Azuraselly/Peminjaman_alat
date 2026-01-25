@@ -1,92 +1,96 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:inventory_alat/admin/component/navbar.dart';
+import 'package:inventory_alat/admin/component/header.dart';
 
-class UserDetailPage extends StatelessWidget {
-  const UserDetailPage({super.key});
+class UserDetailPage extends StatefulWidget {
+  final Map<String, dynamic> userData;
+  const UserDetailPage({super.key, required this.userData});
+
+  @override
+  State<UserDetailPage> createState() => _UserDetailPageState();
+}
+
+class _UserDetailPageState extends State<UserDetailPage> {
+  int _currentIndex = 1;
 
   @override
   Widget build(BuildContext context) {
+    final user = widget.userData;
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        leading: const BackButton(color: Colors.black),
-        title: const Text("Detail User", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+      backgroundColor: const Color(0xFFF8F9FA),
+      bottomNavigationBar: CustomNavbar(
+        selectedIndex: _currentIndex,
+        onItemTapped: (index) => setState(() => _currentIndex = index),
       ),
-      body: Center(
-        child: Container(
-          margin: const EdgeInsets.all(25),
-          padding: const EdgeInsets.all(30),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20)],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Avatar Box
-              Container(
-                padding: const EdgeInsets.all(30),
-                decoration: BoxDecoration(color: const Color(0xFFE8EEF5), borderRadius: BorderRadius.circular(20)),
-                child: const Text("AZ", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF3B71B9))),
-              ),
-              const SizedBox(height: 20),
-              const Text("Azura", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 5),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                decoration: BoxDecoration(color: const Color(0xFFE8EEF5), borderRadius: BorderRadius.circular(10)),
-                child: const Text("SISWA", style: TextStyle(color: Color(0xFF3B71B9), fontSize: 10, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const CustomHeader(), // Header muncul di detail
+            Padding(
+              padding: const EdgeInsets.all(25),
+              child: Column(
                 children: [
-                  _detailItem("KELAS", "XII TKR 1"),
-                  _detailItem("STATUS AKUN", "Aktif", valColor: Colors.green),
-                ],
-              ),
-              const SizedBox(height: 25),
-              Container(
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(15)),
-                child: const Row(
-                  children: [
-                    Icon(Icons.swap_horiz, color: Colors.grey),
-                    SizedBox(width: 15),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("TOTAL PINJAM", style: TextStyle(fontSize: 10, color: Colors.grey)),
-                        Text("12 Kali", style: TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    )
-                  ],
-                ),
-              ),
-              const SizedBox(height: 25),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFEEEEEE),
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back),
+                        style: IconButton.styleFrom(backgroundColor: Colors.white),
                       ),
-                      child: const Text("EDIT DATA"),
+                      const SizedBox(width: 10),
+                      Text("Profil User", style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 25),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(30),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20)],
+                    ),
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 45,
+                          backgroundColor: const Color(0xFFE8EEF5),
+                          child: Text(user['name'].substring(0, 1).toUpperCase(), 
+                            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF3B71B9))),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(user['name'], style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 10),
+                        _buildTag(user['role'].toUpperCase()),
+                        const SizedBox(height: 30),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _detailItem("KELAS", user['class']),
+                            _detailItem("STATUS AKUN", user['status'], 
+                              valColor: user['isActive'] ? Colors.green : Colors.red),
+                          ],
+                        ),
+                        const SizedBox(height: 30),
+                        _actionButtons(),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  _actionIcon(Icons.delete_outline, Colors.red),
                 ],
-              )
-            ],
-          ),
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTag(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+      decoration: BoxDecoration(color: const Color(0xFFE8EEF5), borderRadius: BorderRadius.circular(10)),
+      child: Text(text, style: const TextStyle(color: Color(0xFF3B71B9), fontSize: 10, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -99,11 +103,27 @@ class UserDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _actionIcon(IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-      child: Icon(icon, color: color, size: 20),
+  Widget _actionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () {}, // Fungsi Edit
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF1F4F8),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("EDIT DATA"),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+          child: const Icon(Icons.delete_outline, color: Colors.red),
+        )
+      ],
     );
   }
 }

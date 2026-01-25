@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_alat/admin/component/header.dart';
 import 'package:inventory_alat/admin/component/user/menu_item_card.dart';
+import 'package:inventory_alat/admin/screen/manajemen_alat.dart';
+import 'package:inventory_alat/admin/screen/kategori.dart';
 import 'package:inventory_alat/admin/screen/user_management_page.dart';
 
 class AdminPage extends StatelessWidget {
@@ -28,6 +30,7 @@ class AdminPage extends StatelessWidget {
                     subtitle: "Kelola akun dan data siswa",
                     icon: Icons.people_outline_rounded,
                     onTap: () {
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -40,13 +43,29 @@ class AdminPage extends StatelessWidget {
                     title: "Alat Praktikum",
                     subtitle: "Inventaris alat bengkel",
                     icon: Icons.build_outlined,
-                    onTap: () {},
+                    onTap: () {
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ManajemenAlatPage(),
+                        ),
+                      );
+                    },
                   ),
                   MenuItemCard(
                     title: "Kategoti Alat",
                     subtitle: "Pengelompokan jenis alat",
                     icon: Icons.local_offer_outlined,
-                    onTap: () {},
+                   onTap: () {
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const Kategori(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

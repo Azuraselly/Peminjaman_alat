@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:inventory_alat/colors.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CustomHeader extends StatelessWidget {
   const CustomHeader({super.key});
@@ -7,24 +9,30 @@ class CustomHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
+      height: 170,
       padding: const EdgeInsets.fromLTRB(25, 50, 25, 30),
-      decoration: const BoxDecoration(
-        color: Color(0xFF162D4A),
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: AppColors.seli,
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(30),
           bottomRight: Radius.circular(30),
         ),
+        boxShadow: [BoxShadow(
+          color: Colors.black.withOpacity(0.25),
+          blurRadius: 4,
+          offset: const Offset(0, 4)
+        )]
       ),
       child: Row(
         children: [
           _buildAvatar(),
           const SizedBox(width: 15),
-          const Expanded(
+           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Azura Aulia", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                Text("ADMIN", style: TextStyle(color: Color(0xFF4A90E2), fontWeight: FontWeight.w900, fontSize: 12)),
+                Text("Azura Aulia", style: GoogleFonts.poppins(color: Colors.white, fontSize: 27, fontWeight: FontWeight.w800)),
+                Text("ADMIN", style: GoogleFonts.poppins(color: AppColors.selly, fontWeight: FontWeight.w800, fontSize: 16)),
               ],
             ),
           ),
@@ -42,13 +50,12 @@ class CustomHeader extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.all(2),
-          decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Container(
-              color: const Color(0xFF3B71B9),
-              padding: const EdgeInsets.all(8),
-              child: const Icon(Icons.person, size: 35, color: Colors.white),
+              color: AppColors.selly,
+              padding: const EdgeInsets.all(15),
+              child: const Icon(Icons.person, size: 45, color: AppColors.seli),
             ),
           ),
         ),
@@ -60,8 +67,8 @@ class CustomHeader extends StatelessWidget {
   Widget _buildIcon(IconData icon) {
     return Container(
       padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), shape: BoxShape.circle),
-      child: Icon(icon, color: Colors.white, size: 22),
+      decoration: BoxDecoration(color: AppColors.abumud.withOpacity(0.25), shape: BoxShape.circle),
+      child: Icon(icon, color: Colors.white, size: 24),
     );
   }
 }

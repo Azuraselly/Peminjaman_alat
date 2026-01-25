@@ -19,8 +19,7 @@ class MenuItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      alignment: Alignment.centerLeft,
-      width: double.infinity,
+      width: 372,
       height: 122,
       margin: const EdgeInsets.only(bottom: 15),
       decoration: BoxDecoration(
@@ -33,13 +32,17 @@ class MenuItemCard extends StatelessWidget {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        
         leading: Container(
+          alignment: Alignment.center,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppColors.aulia,
             borderRadius: BorderRadius.circular(15),
           ),
-          child: Icon(icon, color: AppColors.selly, size: 31),
+          
+          child: Icon(
+            icon, color: AppColors.selly, size: 31),
         ),
         title: Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black)),
         subtitle: Text(subtitle, style: GoogleFonts.poppins(fontSize: 12, color: AppColors.abuh, fontWeight:FontWeight.w500)),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:inventory_alat/colors.dart';
 
 class CustomNavbar extends StatelessWidget {
-  // Tambahkan parameter ini
   final int selectedIndex;
   final Function(int) onItemTapped;
   
@@ -15,16 +15,18 @@ class CustomNavbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
+      height: 106,
       decoration: const BoxDecoration(
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25)),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+        color: Colors.white,
+        borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.only(topLeft: Radius.circular(25), topRight: Radius.circular(25)),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFF162D4A),
-          unselectedItemColor: Colors.grey,
+          selectedItemColor: AppColors.seli,
+          unselectedItemColor: AppColors.abuh,
           // Gunakan variabel dari parameter
           currentIndex: selectedIndex, 
           onTap: onItemTapped,
