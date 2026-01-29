@@ -1,4 +1,3 @@
-// lib/admin/component/alat/alat_card.dart
 import 'package:flutter/material.dart';
 import 'package:inventory_alat/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,7 +6,7 @@ class AlatCard extends StatelessWidget {
   final String name;
   final String kategoriName;
   final String stok;
-  final String kondisi; // "Baik", "Rusak Ringan", "Rusak Berat"
+  final String kondisi; 
   final bool isActive;
   final VoidCallback onDelete;
   final VoidCallback onTapDetail;

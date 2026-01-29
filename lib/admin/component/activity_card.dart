@@ -8,7 +8,7 @@ class ActivityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 364,
+      width: double.infinity,
       height: 184,
       padding: const EdgeInsets.all(25),
       alignment: Alignment.center,
@@ -32,7 +32,7 @@ class ActivityCard extends StatelessWidget {
             onPressed: () {},
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white.withOpacity(0.50),
-              minimumSize: const Size(276, 50),
+              minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             ),
             child: Text("CEK LAPORAN", style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),

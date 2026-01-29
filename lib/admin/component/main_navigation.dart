@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_alat/admin/component/navbar.dart';
 import 'package:inventory_alat/admin/screen/admin.dart';
+import 'package:inventory_alat/admin/screen/admin/transaksi/transaksi.dart';
 import 'package:inventory_alat/admin/screen/beranda.dart';
+import 'package:inventory_alat/admin/screen/log_aktivitas.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -17,8 +19,8 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _pages = [
     const BerandaPage(),
     const AdminPage(),
-     const AdminPage(),
-    const Center(child: Text("Halaman Riwayat")),
+     const Transaksi(),
+    const RiwayatPage(),
   ];
 
   @override

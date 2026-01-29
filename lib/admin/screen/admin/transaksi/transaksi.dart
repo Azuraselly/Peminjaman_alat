@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_alat/admin/component/header.dart';
 import 'package:inventory_alat/admin/component/user/menu_item_card.dart';
-import 'package:inventory_alat/admin/screen/manajemen_alat.dart';
-import 'package:inventory_alat/admin/screen/user_management_page.dart';
+import 'package:inventory_alat/admin/screen/admin/alat/manajemen_alat.dart';
+import 'package:inventory_alat/admin/screen/admin/transaksi/peminjaman.dart';
+import 'package:inventory_alat/admin/screen/admin/user/user_management_page.dart';
 
 class Transaksi extends StatelessWidget {
   const Transaksi({super.key});
@@ -33,7 +34,7 @@ class Transaksi extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const UserManagementPage(),
+                          builder: (context) => const DataPeminjamanPage(),
                         ),
                       );
                     },

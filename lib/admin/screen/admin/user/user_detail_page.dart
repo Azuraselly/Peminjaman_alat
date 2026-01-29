@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:inventory_alat/admin/component/navbar.dart';
 import 'package:inventory_alat/admin/component/header.dart';
+import 'package:inventory_alat/admin/component/navbar.dart';
 
 class UserDetailPage extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -12,17 +12,12 @@ class UserDetailPage extends StatefulWidget {
 }
 
 class _UserDetailPageState extends State<UserDetailPage> {
-  int _currentIndex = 1;
 
   @override
   Widget build(BuildContext context) {
     final user = widget.userData;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      bottomNavigationBar: CustomNavbar(
-        selectedIndex: _currentIndex,
-        onItemTapped: (index) => setState(() => _currentIndex = index),
-      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -82,6 +77,12 @@ class _UserDetailPageState extends State<UserDetailPage> {
             ),
           ],
         ),
+      ),
+       bottomNavigationBar: CustomNavbar(
+        selectedIndex: 1,
+        onItemTapped: (index) {
+          Navigator.pop(context); 
+        },
       ),
     );
   }

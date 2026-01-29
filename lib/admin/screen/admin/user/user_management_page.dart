@@ -4,8 +4,9 @@ import 'package:inventory_alat/admin/component/header.dart';
 import 'package:inventory_alat/admin/component/navbar.dart';
 import 'package:inventory_alat/admin/component/user/add_user_dialog.dart';
 import 'package:inventory_alat/admin/component/user/user_card.dart';
-import 'package:inventory_alat/admin/screen/user_detail_page.dart';
+import 'package:inventory_alat/admin/screen/admin/user/user_detail_page.dart';
 import 'package:inventory_alat/colors.dart';
+import 'package:inventory_alat/service/user_service.dart';
 
 class UserManagementPage extends StatefulWidget {
   const UserManagementPage({super.key});
@@ -15,85 +16,67 @@ class UserManagementPage extends StatefulWidget {
 }
 
 class _UserManagementPageState extends State<UserManagementPage> {
-  bool _showNotification = false;
-  String _notifMessage = "";
-  int _currentIndex = 1; // Asumsi index 1 adalah Manajemen User
-
-  // Data Master
-  List<Map<String, dynamic>> _allUsers = [
-    {
-      "name": "Azura",
-      "class": "XII TKR 1",
-      "role": "Peminjam",
-      "status": "Aktif",
-      "isActive": true,
-    },
-    {
-      "name": "Aulia",
-      "class": "XII TKR 2",
-      "role": "Petugas",
-      "status": "Tidak Aktif",
-      "isActive": false,
-    },
-  ];
-
-  // Data Filter untuk Pencarian
-  List<Map<String, dynamic>> _filteredUsers = [];
+  final UserService _userService = UserService();
   final TextEditingController _searchController = TextEditingController();
+
+  List<Map<String, dynamic>> _allUsers = [];
+  List<Map<String, dynamic>> _filteredUsers = [];
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _filteredUsers = _allUsers;
+    _loadUsers();
   }
 
-  // --- LOGIKA CRUD & FITUR ---
+  Future<void> _loadUsers() async {
+    final data = await _userService.getAllUsers();
+    setState(() {
+      _allUsers = data;
+      _filteredUsers = data;
+      _loading = false;
+    });
+  }
 
   void _runFilter(String query) {
     setState(() {
-      _filteredUsers = _allUsers
-          .where(
-            (user) => user["name"].toLowerCase().contains(query.toLowerCase()),
-          )
-          .toList();
+      _filteredUsers = query.isEmpty
+          ? _allUsers
+          : _allUsers
+                .where(
+                  (u) => u['name'].toLowerCase().contains(query.toLowerCase()),
+                )
+                .toList();
     });
   }
 
-  // Panggil ini saat tombol edit ditekan
-  void _editUser(int index) async {
+  Future<void> _addUser() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (_) => AddUserDialog(initialData: _filteredUsers[index]),
+      builder: (_) => const AddUserDialog(),
     );
 
     if (result != null) {
-      setState(() {
-        // Cari nama user yang asli di master list dan update
-        String oldName = _filteredUsers[index]['name'];
-        int masterIndex = _allUsers.indexWhere((u) => u['name'] == oldName);
-        _allUsers[masterIndex] = result;
-        _runFilter(_searchController.text);
-      });
-      _triggerNotification("Data ${result['name']} berhasil diupdate");
+      await _userService.addUser(result);
+      await _loadUsers();
     }
   }
 
-  void _triggerNotification(String message) {
-    setState(() {
-      _notifMessage = message;
-      _showNotification = true;
-    });
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) setState(() => _showNotification = false);
-    });
+  Future<void> _editUser(Map<String, dynamic> user) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => AddUserDialog(initialData: user),
+    );
+
+    if (result != null) {
+      await _userService.updateUser(user['id_user'], result);
+      await _loadUsers();
+    }
   }
 
-  void _deleteUser(String name) {
-    setState(() {
-      _allUsers.removeWhere((user) => user["name"] == name);
-      _runFilter(_searchController.text);
-    });
-    _triggerNotification("Berhasil menghapus $name");
+  Future<void> _deleteUser(Map<String, dynamic> user) async {
+    await _userService.deleteUser(user['id_user'], user['name']);
+    await _loadUsers();
   }
 
   void _showDeleteConfirmation(
@@ -178,7 +161,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
     overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
-        top: 50, // Sesuaikan dengan tinggi area biru header
+        top: 50,
         left: 25,
         right: 25,
         child: Material(
@@ -186,9 +169,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(
-                0.85,
-              ), // Semi transparan sesuai gambar
+              color: Colors.white.withOpacity(0.85),
               borderRadius: BorderRadius.circular(15),
               boxShadow: [
                 BoxShadow(
@@ -227,21 +208,30 @@ class _UserManagementPageState extends State<UserManagementPage> {
     Future.delayed(const Duration(seconds: 2), () => overlayEntry.remove());
   }
 
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Terjadi Kesalahan"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _triggerNotification(String message) {
+    _showTopNotification(context, message);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      bottomNavigationBar: CustomNavbar(
-        selectedIndex: _currentIndex,
-        onItemTapped: (index) {
-          if (index == _currentIndex) return;
-          setState(() => _currentIndex = index);
-
-          // Logika pindah halaman nyata
-          if (index == 0) Navigator.pushReplacementNamed(context, '/home');
-          if (index == 2) Navigator.pushReplacementNamed(context, '/settings');
-        },
-      ),
       body: Stack(
         children: [
           Column(
@@ -335,7 +325,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                           );
                         });
                       },
-                      onEdit: () => _editUser(index),
+                      onEdit: () => _editUser(index as Map<String, dynamic>),
                       onTapProfile: () {
                         Navigator.push(
                           context,
@@ -351,15 +341,14 @@ class _UserManagementPageState extends State<UserManagementPage> {
               ),
             ],
           ),
-          // Floating Notification
-          if (_showNotification)
-            Positioned(
-              top: 50,
-              left: 20,
-              right: 20,
-              child: _buildNotifWidget(_notifMessage),
-            ),
+          
         ],
+      ),
+      bottomNavigationBar: CustomNavbar(
+        selectedIndex: 1,
+        onItemTapped: (index) {
+          Navigator.pop(context);
+        },
       ),
     );
   }
@@ -404,3 +393,5 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
   }
 }
+
+

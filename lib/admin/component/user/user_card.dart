@@ -47,13 +47,9 @@ class UserCard extends StatelessWidget {
                 radius: 35,
                 backgroundColor: AppColors.aulia,
                 child: Text(
-                  name.substring(0, 2).toUpperCase(),
-                  style:GoogleFonts.poppins(
-                    color: AppColors.selly,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 20,
-                  ),
-                ),
+  name ?? "Tanpa Nama", 
+  style: GoogleFonts.poppins(fontWeight: FontWeight.bold)
+),
               ),
               const SizedBox(width: 15),
               Column(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:inventory_alat/admin/component/navbar.dart';
 import 'package:inventory_alat/colors.dart'; // Pastikan file warna Anda sudah ada
 
 class DetailAlatPage extends StatelessWidget {
@@ -105,6 +106,12 @@ class DetailAlatPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+       bottomNavigationBar: CustomNavbar(
+        selectedIndex: 1,
+        onItemTapped: (index) {
+          Navigator.pop(context); 
+        },
       ),
     );
   }

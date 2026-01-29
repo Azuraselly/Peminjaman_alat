@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:inventory_alat/admin/component/header.dart';
 import 'package:inventory_alat/admin/component/kategori/add_kategori.dart';
 import 'package:inventory_alat/admin/component/navbar.dart';
-import 'package:inventory_alat/admin/component/kategori/add_kategori.dart';
 import 'package:inventory_alat/admin/component/kategori/kategori_card.dart';
 import 'package:inventory_alat/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:inventory_alat/admin/screen/detail_kategori.dart';
+import 'package:inventory_alat/admin/screen/admin/kategori/detail_kategori.dart';
 
 class Kategori extends StatefulWidget {
   const Kategori({super.key});
@@ -18,7 +17,6 @@ class Kategori extends StatefulWidget {
 
 class _KategoriState extends State<Kategori> {
   bool _showNotification = false;
-    int _currentIndex = 0;
     
 
   void _triggerNotification() {
@@ -81,14 +79,7 @@ class _KategoriState extends State<Kategori> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-       bottomNavigationBar: CustomNavbar(
-        selectedIndex: _currentIndex,
-        onItemTapped: (index) {
-          setState(() {
-            _currentIndex = index; // Ganti halaman saat diklik
-          });
-        },
-      ),
+      
       body: Stack(
         children: [
           Column(
@@ -220,6 +211,12 @@ class _KategoriState extends State<Kategori> {
               ),
             ),
         ],
+      ),
+       bottomNavigationBar: CustomNavbar(
+        selectedIndex: 1, 
+        onItemTapped: (index) {
+          Navigator.pop(context); 
+        },
       ),
     );
   }

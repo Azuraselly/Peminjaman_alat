@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:inventory_alat/admin/component/navbar.dart';
 
 // Catatan: Anda bisa memanggil komponen Header dari file DetailAlatPage agar tidak duplikasi
 class DetailKategoriPage extends StatelessWidget {
@@ -26,7 +27,7 @@ class DetailKategoriPage extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(30),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: const Color.fromARGB(255, 11, 6, 6),
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: [
                         BoxShadow(
@@ -97,6 +98,12 @@ class DetailKategoriPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+       bottomNavigationBar: CustomNavbar(
+        selectedIndex: 1, 
+        onItemTapped: (index) {
+          Navigator.pop(context); // Kembali ke navigasi utama
+        },
       ),
     );
   }

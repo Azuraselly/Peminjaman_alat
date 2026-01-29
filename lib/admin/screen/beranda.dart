@@ -4,6 +4,8 @@ import 'package:inventory_alat/admin/component/stat_card.dart';
 import 'package:inventory_alat/admin/component/activity_card.dart';
 import 'package:inventory_alat/admin/component/header.dart';
 import 'package:inventory_alat/admin/screen/admin.dart';
+import 'package:inventory_alat/admin/screen/admin/transaksi/transaksi.dart';
+import 'package:inventory_alat/admin/screen/log_aktivitas.dart';
 import 'package:inventory_alat/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -15,24 +17,18 @@ class BerandaPage extends StatefulWidget {
 }
 
 class _BerandaPageState extends State<BerandaPage> {
-  // Variabel untuk melacak halaman mana yang aktif
   int _currentIndex = 0;
 
-  // 2. Fungsi untuk menampilkan konten berdasarkan index
   Widget _buildBody() {
     switch (_currentIndex) {
       case 0:
-        return _buildMainContent(); // Halaman Beranda
+        return _buildMainContent();
       case 1:
         return const AdminPage();
       case 2:
-        return const Center(
-          child: Text("Halaman Transaksi", style: TextStyle(fontSize: 20)),
-        );
+        return const Transaksi();
       case 3:
-        return const Center(
-          child: Text("Halaman Riwayat", style: TextStyle(fontSize: 20)),
-        );
+        return const RiwayatPage();
       default:
         return _buildMainContent();
     }
@@ -42,7 +38,6 @@ class _BerandaPageState extends State<BerandaPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFB),
-      // NAVBAR TETAP DI BAWAH (FIXED)
       bottomNavigationBar: CustomNavbar(
         selectedIndex: _currentIndex,
         onItemTapped: (index) {
@@ -62,7 +57,6 @@ class _BerandaPageState extends State<BerandaPage> {
     );
   }
 
-  // 3. Pindahkan konten Beranda ke fungsi terpisah agar rapi
   Widget _buildMainContent() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20),

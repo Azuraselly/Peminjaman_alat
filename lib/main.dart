@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:inventory_alat/admin/screen/beranda.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:inventory_alat/auth/login_page.dart';
+import 'package:inventory_alat/admin/screen/admin.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,7 +26,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFFF5F5F5),
       ),
-      home: const LoginPage(),
+      home: const BerandaPage(),
     );
   }
 }
