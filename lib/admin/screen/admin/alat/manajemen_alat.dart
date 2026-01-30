@@ -5,7 +5,6 @@ import 'package:inventory_alat/admin/component/alat/add_alat.dart';
 import 'package:inventory_alat/admin/component/alat/alat_card.dart';
 import 'package:inventory_alat/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:inventory_alat/service/alat_service.dart';
 
 class ManajemenAlatPage extends StatefulWidget {
   const ManajemenAlatPage({super.key});
@@ -14,35 +13,26 @@ class ManajemenAlatPage extends StatefulWidget {
   State<ManajemenAlatPage> createState() => _ManajemenAlatPageState();
 }
 
-final AlatService _alatService = AlatService();
-
 class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
   bool _showNotification = false;
   String _notifMessage = "";
 
- List<Map<String, dynamic>> _allAlat = [];
-
- @override
-void initState() {
-  super.initState();
-  _loadAlat();
-}
-
-Future<void> _loadAlat() async {
-  final data = await _alatService.getAllAlat();
-  setState(() {
-    _allAlat = data.map((e) => {
-      'id': e['id_alat'],
-      'name': e['nama_alat'],
-      'kategori': e['kategori']?['nama_kategori'] ?? '-',
-      'stok': '${e['stok_alat']} Unit',
-      'kondisi': e['kondisi_alat'],
-      'desc': e['deskripsi'],
-    }).toList();
-  });
-}
-
-
+  List<Map<String, dynamic>> _allAlat = [
+    {
+      "name": "Tang Kombinasi",
+      "kategori": "ALAT TANGAN",
+      "stok": "5 Unit",
+      "kondisi": "Baik",
+      "desc": "Tang serbaguna",
+    },
+    {
+      "name": "Dongkrak Buaya",
+      "kategori": "SERVIS",
+      "stok": "8 Unit",
+      "kondisi": "Rusak Ringan",
+      "desc": "Dongkrak hidrolik",
+    },
+  ];
 
 void _openForm({Map<String, dynamic>? item, int? index}) {
     showDialog(
@@ -64,11 +54,6 @@ void _openForm({Map<String, dynamic>? item, int? index}) {
       ),
     );
   }
-  Future<void> _deleteAlat(int index) async {
-  await _alatService.deleteAlat(_allAlat[index]['id']);
-  await _loadAlat();
-}
-
 
   void _triggerNotification(String message) {
     setState(() {
@@ -165,6 +150,13 @@ void _openForm({Map<String, dynamic>? item, int? index}) {
     );
   }
 
+  void _deleteAlat(int index) {
+    String deletedName = _allAlat[index]['name'];
+    setState(() {
+      _allAlat.removeAt(index);
+      _notifMessage = "Berhasil menghapus $deletedName";
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

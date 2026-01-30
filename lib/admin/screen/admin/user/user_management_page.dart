@@ -16,67 +16,58 @@ class UserManagementPage extends StatefulWidget {
 }
 
 class _UserManagementPageState extends State<UserManagementPage> {
-  final UserService _userService = UserService();
+  bool _showNotification = false;
+  String _notifMessage = "";
+  bool _isLoading = false;
+
+  // Data Filter untuk Pencarian
+  List<Map<String, dynamic>> _filteredUsers = [];
+  List<Map<String, dynamic>> _allUsers = [];
   final TextEditingController _searchController = TextEditingController();
 
-  List<Map<String, dynamic>> _allUsers = [];
-  List<Map<String, dynamic>> _filteredUsers = [];
-  bool _loading = true;
+  final UserService _userService = UserService();
 
   @override
   void initState() {
     super.initState();
-    _loadUsers();
+    _loadData();
   }
 
-  Future<void> _loadUsers() async {
-    final data = await _userService.getAllUsers();
-    setState(() {
-      _allUsers = data;
-      _filteredUsers = data;
-      _loading = false;
-    });
+  Future<void> _loadData() async {
+    try {
+      final users = await _userService.getAllUsers();
+      setState(() {
+        _allUsers = users;
+        _filteredUsers = users;
+      });
+    } catch (e) {
+      _showErrorDialog("Gagal memuat data user: ${e.toString()}");
+    }
   }
 
   void _runFilter(String query) {
     setState(() {
-      _filteredUsers = query.isEmpty
-          ? _allUsers
-          : _allUsers
-                .where(
-                  (u) => u['name'].toLowerCase().contains(query.toLowerCase()),
-                )
-                .toList();
+      if (query.isEmpty) {
+        _filteredUsers = _allUsers;
+      } else {
+        _filteredUsers = _allUsers
+            .where(
+              (user) =>
+                  user['name'].toLowerCase().contains(query.toLowerCase()),
+            )
+            .toList();
+      }
     });
   }
 
-  Future<void> _addUser() async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (_) => const AddUserDialog(),
-    );
-
-    if (result != null) {
-      await _userService.addUser(result);
-      await _loadUsers();
-    }
-  }
-
-  Future<void> _editUser(Map<String, dynamic> user) async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (_) => AddUserDialog(initialData: user),
-    );
-
-    if (result != null) {
-      await _userService.updateUser(user['id_user'], result);
-      await _loadUsers();
-    }
-  }
-
-  Future<void> _deleteUser(Map<String, dynamic> user) async {
-    await _userService.deleteUser(user['id_user'], user['name']);
-    await _loadUsers();
+  void _triggerNotification(String message) {
+    setState(() {
+      _notifMessage = message;
+      _showNotification = true;
+    });
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _showNotification = false);
+    });
   }
 
   void _showDeleteConfirmation(
@@ -224,8 +215,67 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
   }
 
-  void _triggerNotification(String message) {
-    _showTopNotification(context, message);
+  // Update fungsi TAMBAH dengan validasi & loading
+  void _addNewUser() async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => const AddUserDialog(),
+    );
+
+    if (result != null) {
+      setState(() => _isLoading = true); // Mulai loading
+      try {
+        await _userService.addUser(result);
+        await _loadData();
+        _showTopNotification(
+          context,
+          "User ${result['name']} berhasil disimpan",
+        );
+      } catch (e) {
+        _showErrorDialog(e.toString());
+      } finally {
+        setState(() => _isLoading = false); // Berhenti loading
+      }
+    }
+  }
+
+  // Update fungsi EDIT
+  void _editUser(Map<String, dynamic> user) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => AddUserDialog(initialData: user),
+    );
+
+    if (result != null) {
+      setState(() => _isLoading = true);
+      try {
+        await _userService.updateUser(user['id_user'], result);
+        await _loadData();
+        _showTopNotification(context, "Data ${result['name']} diperbarui");
+      } catch (e) {
+        _showErrorDialog(e.toString());
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  // Update fungsi HAPUS
+  void _confirmDelete(Map<String, dynamic> user) {
+    _showDeleteConfirmation(context, user['name'], () async {
+      setState(() => _isLoading = true);
+      try {
+        await _userService.deleteUser(user['id_user'], user['name']);
+        await _loadData();
+        _showTopNotification(context, "Berhasil menghapus ${user['name']}");
+      } catch (e) {
+        _showErrorDialog(
+          "Gagal menghapus: Mungkin user ini masih terkait dengan data lain.",
+        );
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    });
   }
 
   @override
@@ -341,7 +391,14 @@ class _UserManagementPageState extends State<UserManagementPage> {
               ),
             ],
           ),
-          
+          // Floating Notification
+          if (_showNotification)
+            Positioned(
+              top: 50,
+              left: 20,
+              right: 20,
+              child: _buildNotifWidget(_notifMessage),
+            ),
         ],
       ),
       bottomNavigationBar: CustomNavbar(
@@ -393,5 +450,3 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
   }
 }
-
-

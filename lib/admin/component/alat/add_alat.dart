@@ -16,8 +16,6 @@ class AddAlat extends StatefulWidget {
   State<AddAlat> createState() => _AddAlatState();
 }
 
-
-
 class _AddAlatState extends State<AddAlat> {
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _stokController = TextEditingController();
@@ -49,29 +47,26 @@ class _AddAlatState extends State<AddAlat> {
     }
   }
 
- void _validateAndSave() {
-  setState(() {
-    _namaError = _namaController.text.isEmpty ? "Nama alat tidak boleh kosong" : null;
-    _kategoriError = _selectedKategori == null ? "Pilih kategori" : null;
-    _kondisiError = _selectedKondisi == null ? "Pilih kondisi" : null;
-    _stokError = _stokController.text.isEmpty ? "Stok tidak boleh kosong" : null;
-  });
-
-  if (_namaError == null &&
-      _kategoriError == null &&
-      _kondisiError == null &&
-      _stokError == null) {
-    widget.onSaveSuccess({
-      "name": _namaController.text,
-      "kategori": _selectedKategori,
-      "stok": "${_stokController.text} Unit",
-      "kondisi": _selectedKondisi,
-      "desc": _deskripsiController.text,
+  void _validateAndSave() {
+    setState(() {
+      _namaError = _namaController.text.isEmpty ? "Nama alat tidak boleh kosong" : null;
+      _kategoriError = _selectedKategori == null ? "Pilih kategori" : null;
+      _kondisiError = _selectedKondisi == null ? "Pilih kondisi" : null;
+      _stokError = _stokController.text.isEmpty ? "Stok tidak boleh kosong" : null;
     });
-    Navigator.pop(context);
-  }
-}
 
+    if (_namaError == null && _kategoriError == null && _kondisiError == null && _stokError == null) {
+      widget.onSaveSuccess({
+        "name": _namaController.text,
+        "kategori": _selectedKategori,
+        "stok": "${_stokController.text} Unit",
+        "kondisi": _selectedKondisi,
+        "desc": _deskripsiController.text,
+        // Tambahkan path image jika perlu: "image": _image?.path,
+      });
+      Navigator.pop(context);
+    }
+  }
 
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);

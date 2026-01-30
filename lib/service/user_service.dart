@@ -1,42 +1,31 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserService {
-  final _client = Supabase.instance.client;
+  final _supabase = Supabase.instance.client;
 
-  // READ
-  Future<List<Map<String, dynamic>>> getUsers() async {
-    final res = await _client
-        .from('users')
-        .select()
-        .order('created_at');
-
-    return List<Map<String, dynamic>>.from(res);
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    final response = await _supabase.from('users').select().order('username');
+    return List<Map<String, dynamic>>.from(response);
   }
 
-  // CREATE
-  Future<void> addUser(Map<String, dynamic> data) async {
-    await _client.from('users').insert({
-      'username': data['name'],
-      'kelas': data['class'],
-      'role': data['role'],
-      'status': data['isActive'] ?? true,
+ Future<void> addUser(Map<String, dynamic> data) async {
+    await _supabase.from('users').insert({
+      'username': data['username'], 
+      'role': data['role'].toString().toLowerCase(),
+      'status': data['status'] ?? true, // Kirim boolean true/false
     });
   }
 
-  // UPDATE
-  Future<void> updateUser(String id, Map<String, dynamic> data) async {
-    await _client.from('users').update({
-      'username': data['name'],
-      'kelas': data['class'],
-      'role': data['role'],
-      'status': data['isActive'],
+Future<void> updateUser(dynamic id, Map<String, dynamic> data) async {
+    await _supabase.from('users').update({
+      'username': data['username'],
+      'role': data['role'].toString().toLowerCase(),
+      'status': data['status'],
     }).eq('id_user', id);
   }
-
   // DELETE
-  Future<void> deleteUser(String id, user) async {
-    await _client.from('users').delete().eq('id_user', id);
+ Future<void> deleteUser(dynamic id) async {
+    if (id == null) return;
+    await _supabase.from('users').delete().eq('id_user', id);
   }
-
-  Future getAllUsers() async {}
 }
