@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 class UserCard extends StatelessWidget {
   final String name;
-  final String className;
   final String role;
   final String status;
   final bool isActive;
@@ -15,7 +14,6 @@ class UserCard extends StatelessWidget {
   const UserCard({
     super.key,
     required this.name,
-    required this.className,
     required this.role,
     required this.status,
     this.isActive = true,
@@ -23,6 +21,7 @@ class UserCard extends StatelessWidget {
     required this.onEdit,
     required this.onTapProfile,
   });
+
 
   @override
   Widget build(BuildContext context) {
@@ -46,10 +45,11 @@ class UserCard extends StatelessWidget {
               CircleAvatar(
                 radius: 35,
                 backgroundColor: AppColors.aulia,
-                child: Text(
-  name ?? "Tanpa Nama", 
-  style: GoogleFonts.poppins(fontWeight: FontWeight.bold)
+               child: Text(
+  name,
+  style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
 ),
+
               ),
               const SizedBox(width: 15),
               Column(
@@ -63,10 +63,7 @@ class UserCard extends StatelessWidget {
                       color: Colors.black
                     ),
                   ),
-                  Text(
-                    className,
-                    style:GoogleFonts.poppins(color: AppColors.abuh, fontSize: 13,fontWeight: FontWeight.w900),
-                  ),
+                
                 ],
               ),
             ],

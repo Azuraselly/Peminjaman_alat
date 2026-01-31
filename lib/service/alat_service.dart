@@ -1,9 +1,14 @@
+<<<<<<< HEAD
 import 'dart:io'; // Penting untuk File
+=======
+import 'dart:io';
+>>>>>>> 4fe59e9 (target 3)
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AlatService {
-  final SupabaseClient _client = Supabase.instance.client;
+  final supabase = Supabase.instance.client;
 
+<<<<<<< HEAD
   // 1. Fungsi Helper untuk Upload Gambar
   Future<String?> _uploadGambar(File imageFile) async {
     try {
@@ -78,8 +83,43 @@ class AlatService {
 
   Future<void> deleteAlat(int id) async {
     await _client
+=======
+  // Ambil semua alat
+  Future<List<Map<String, dynamic>>> getAllAlat() async {
+    final response = await supabase
+>>>>>>> 4fe59e9 (target 3)
         .from('alat')
-        .update({'deleted_at': DateTime.now().toIso8601String()})
-        .eq('id_alat', id);
+        .select('*, kategori(*)')
+        .isNull('deleted_at')
+        .execute();
+
+    if (response.error != null) throw response.error!;
+    return List<Map<String, dynamic>>.from(response.data as List);
   }
+
+  // Tambah alat
+  Future<void> addAlat(Map<String, dynamic> data) async {
+    final response = await supabase.from('alat').insert([data])._execute();
+    if (response.error != null) throw response.error!;
+  }
+
+  // Update alat
+  Future<void> updateAlat(int id, Map<String, dynamic> data) async {
+    final response = await supabase.from('alat').update(data).eq('id_alat', id).execute();
+    if (response.error != null) throw response.error!;
+  }
+
+  // Hapus alat (soft delete)
+  Future<void> deleteAlat(int id) async {
+    final response = await supabase.from('alat').update({'deleted_at': DateTime.now().toIso8601String()}).eq('id_alat', id).execute();
+    if (response.error != null) throw response.error!;
+  }
+<<<<<<< HEAD
 }
+=======
+}
+
+extension on PostgrestFilterBuilder<PostgrestList> {
+  +(String s) {}
+}
+>>>>>>> 4fe59e9 (target 3)

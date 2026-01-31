@@ -47,6 +47,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
   void _runFilter(String query) {
     setState(() {
+<<<<<<< HEAD
       if (query.isEmpty) {
         _filteredUsers = _allUsers;
       } else {
@@ -69,6 +70,46 @@ class _UserManagementPageState extends State<UserManagementPage> {
       if (mounted) setState(() => _showNotification = false);
     });
   }
+=======
+      _filteredUsers = query.isEmpty
+          ? _allUsers
+          : _allUsers
+              .where(
+                (u) => u['name']
+                    .toString()
+                    .toLowerCase()
+                    .contains(query.toLowerCase()),
+              )
+              .toList();
+    });
+  }
+
+  Future<void> _addUser() async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => const AddUserDialog(),
+    );
+
+    if (result != null) {
+      await _userService.addUser(result);
+      await _loadUsers();
+    }
+  }
+
+  Future<void> _editUser(Map<String, dynamic> user) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => AddUserDialog(initialData: user),
+    );
+
+    if (result != null) {
+      await _userService.updateUser(user['id_user'], result);
+      await _loadUsers();
+    }
+  }
+
+                               
+>>>>>>> 4fe59e9 (target 3)
 
   void _showDeleteConfirmation(
     BuildContext context,
@@ -307,15 +348,14 @@ class _UserManagementPageState extends State<UserManagementPage> {
                     _buildSquareBtn(
                       Icons.add,
                       () async {
-                        final result = await showDialog(
+                        final result = await showDialog<Map<String, dynamic>>(
                           context: context,
                           builder: (_) => const AddUserDialog(),
                         );
                         if (result != null) {
-                          setState(() {
-                            _allUsers.add(result);
-                            _runFilter("");
-                          });
+                          await _userService.addUser(result);
+                          await _loadUsers();
+
                           _triggerNotification(
                             "User ${result['name']} ditambahkan",
                           );
@@ -356,26 +396,26 @@ class _UserManagementPageState extends State<UserManagementPage> {
                   itemBuilder: (context, index) {
                     final user = _filteredUsers[index];
                     return UserCard(
-                      name: user['name'],
-                      className: user['class'],
-                      role: user['role'],
-                      status: user['status'],
-                      isActive: user['isActive'],
-                      onDelete: () {
-                        _showDeleteConfirmation(context, user['name'], () {
-                          setState(() {
-                            // Logika hapus data Anda
-                            _allUsers.removeAt(index);
-                            _runFilter(_searchController.text);
-                          });
-                          // Tampilkan notifikasi melayang PERSIS seperti gambar
-                          _showTopNotification(
-                            context,
-                            "Menghapus 1 user: ${user['name']}",
-                          );
-                        });
-                      },
-                      onEdit: () => _editUser(index as Map<String, dynamic>),
+  name: user['name'] ?? 'Tanpa Nama',
+  role: user['role'] ?? '-',
+  status: user['status'] == true ? 'Aktif' : 'Nonaktif',
+  isActive: user['status'] ?? false,
+  onDelete: () {
+    _showDeleteConfirmation(
+      context,
+      user['name'] ?? 'User',
+      () async {
+        await _userService.deleteUser(user['id_user']);
+        await _loadUsers();
+        _showTopNotification(
+          context,
+          "User ${user['name']} dihapus",
+        );
+      },
+    );
+  },
+
+                      onEdit: () => _editUser(user),
                       onTapProfile: () {
                         Navigator.push(
                           context,

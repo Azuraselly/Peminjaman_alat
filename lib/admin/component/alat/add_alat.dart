@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:inventory_alat/service/alat_service.dart';
 // Sesuaikan dengan path project kamu
 // import 'package:inventory_alat/colors.dart'; 
 
@@ -20,14 +21,14 @@ class _AddAlatState extends State<AddAlat> {
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _stokController = TextEditingController();
   final TextEditingController _deskripsiController = TextEditingController();
-
   String? _selectedKategori;
   String? _selectedKondisi;
   File? _image;
   final ImagePicker _picker = ImagePicker();
+  final AlatService _alatService = AlatService();
 
   final List<String> _listKategori = ['Alat Tangan', 'K3', 'Servis'];
-  final List<String> _listKondisi = ['Baik', 'Rusak', 'Hilang'];
+  final List<String> _listKondisi = ['Baik', 'Rusak Ringan', 'Rusak Berat', 'Hilang'];
 
   String? _namaError;
   String? _kategoriError;
@@ -39,15 +40,18 @@ class _AddAlatState extends State<AddAlat> {
     super.initState();
     if (widget.initialData != null) {
       _namaController.text = widget.initialData!['name'] ?? "";
-      // Logika split stok jika ada kata " Unit"
-      _stokController.text = widget.initialData!['stok']?.toString().split(' ')[0] ?? ""; 
+      _stokController.text = widget.initialData!['stok']?.toString().split(' ')[0] ?? "";
       _selectedKategori = widget.initialData!['kategori'];
       _selectedKondisi = widget.initialData!['kondisi'];
       _deskripsiController.text = widget.initialData!['desc'] ?? "";
     }
   }
 
+<<<<<<< HEAD
   void _validateAndSave() {
+=======
+  void _validateAndSave() async {
+>>>>>>> 4fe59e9 (target 3)
     setState(() {
       _namaError = _namaController.text.isEmpty ? "Nama alat tidak boleh kosong" : null;
       _kategoriError = _selectedKategori == null ? "Pilih kategori" : null;
@@ -55,6 +59,7 @@ class _AddAlatState extends State<AddAlat> {
       _stokError = _stokController.text.isEmpty ? "Stok tidak boleh kosong" : null;
     });
 
+<<<<<<< HEAD
     if (_namaError == null && _kategoriError == null && _kondisiError == null && _stokError == null) {
       widget.onSaveSuccess({
         "name": _namaController.text,
@@ -65,16 +70,39 @@ class _AddAlatState extends State<AddAlat> {
         // Tambahkan path image jika perlu: "image": _image?.path,
       });
       Navigator.pop(context);
+=======
+    if (_namaError == null &&
+        _kategoriError == null &&
+        _kondisiError == null &&
+        _stokError == null) {
+      final data = {
+        "nama_alat": _namaController.text,
+        "id_kategori": _listKategori.indexOf(_selectedKategori!) + 1, // contoh id kategori
+        "stok_alat": int.tryParse(_stokController.text) ?? 0,
+        "kondisi_alat": _selectedKondisi!.toLowerCase(),
+        "deskripsi": _deskripsiController.text,
+      };
+
+      try {
+        if (widget.initialData != null && widget.initialData!['id'] != null) {
+          await _alatService.updateAlat(widget.initialData!['id'], data);
+        } else {
+          await _alatService.addAlat(data);
+        }
+        widget.onSaveSuccess(data);
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
+      }
+>>>>>>> 4fe59e9 (target 3)
     }
   }
 
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-    }
+    if (pickedFile != null) setState(() => _image = File(pickedFile.path));
   }
 
   @override

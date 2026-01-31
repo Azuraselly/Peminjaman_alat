@@ -8,15 +8,17 @@ import 'package:google_fonts/google_fonts.dart';
 
 class ManajemenAlatPage extends StatefulWidget {
   const ManajemenAlatPage({super.key});
-
   @override
   State<ManajemenAlatPage> createState() => _ManajemenAlatPageState();
 }
 
 class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
+  final AlatService _alatService = AlatService();
+  List<Map<String, dynamic>> _allAlat = [];
   bool _showNotification = false;
   String _notifMessage = "";
 
+<<<<<<< HEAD
   List<Map<String, dynamic>> _allAlat = [
     {
       "name": "Tang Kombinasi",
@@ -35,29 +37,54 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
   ];
 
 void _openForm({Map<String, dynamic>? item, int? index}) {
+=======
+  @override
+  void initState() {
+    super.initState();
+    _loadAlat();
+    // Realtime listener
+    _alatService.supabase.from('alat').stream(primaryKey: ['id_alat']).listen((_) => _loadAlat());
+  }
+
+  Future<void> _loadAlat() async {
+    final data = await _alatService.getAllAlat();
+    setState(() {
+      _allAlat = data.map((e) => {
+        'id': e['id_alat'],
+        'name': e['nama_alat'],
+        'kategori': e['kategori']?['nama_kategori'] ?? '-',
+        'stok': '${e['stok_alat']} Unit',
+        'kondisi': e['kondisi_alat'],
+        'desc': e['deskripsi'],
+      }).toList();
+    });
+  }
+
+  void _openForm({Map<String, dynamic>? item, int? index}) {
+>>>>>>> 4fe59e9 (target 3)
     showDialog(
       context: context,
       builder: (_) => AddAlat(
         initialData: item,
         onSaveSuccess: (newData) {
-          setState(() {
-            if (index != null) {
-              _allAlat[index] = newData;
-              _notifMessage = "Berhasil memperbarui ${newData['name']}";
-            } else {
-              _allAlat.add(newData);
-              _notifMessage = "Berhasil menambah ${newData['name']}";
-            }
-          });
-          _triggerNotification(_notifMessage); // Kirim pesan ke notif
+          _triggerNotification(item != null ? "Berhasil update ${newData['nama_alat']}" : "Berhasil tambah ${newData['nama_alat']}");
         },
       ),
     );
   }
+<<<<<<< HEAD
+=======
+
+  void _deleteAlat(int index) async {
+    await _alatService.deleteAlat(_allAlat[index]['id']);
+    _triggerNotification("Berhasil hapus ${_allAlat[index]['name']}");
+    _loadAlat();
+  }
+>>>>>>> 4fe59e9 (target 3)
 
   void _triggerNotification(String message) {
     setState(() {
-      _notifMessage = message; // Update pesan yang akan muncul di snackbar/overlay
+      _notifMessage = message;
       _showNotification = true;
     });
     Future.delayed(const Duration(seconds: 3), () {
