@@ -12,51 +12,96 @@ class AddUserDialog extends StatefulWidget {
 }
 
 class _AddUserDialogState extends State<AddUserDialog> {
-  final TextEditingController _namaController = TextEditingController();
-  String? _selectedKelas;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
   String? _selectedRole;
+  String? _selectedClass;
+  bool _status = true;
 
   // Variabel untuk menyimpan pesan error
-  String? _namaError;
-  String? _kelasError;
+  String? _emailError;
+  String? _passwordError;
+  String? _usernameError;
   String? _roleError;
 
-  final List<String> _listKelas = ['XI TKR 1', 'XI TKR 2', 'XI TKR 3', 'XI TKR 4'];
-  final List<String> _listRole = ['Peminjam', 'Petugas', 'Admin'];
+  final List<String> _listRole = ['admin', 'petugas', 'peminjam'];
+ final List<String> _listClass = [
+  'X TKR 1', 'X TKR 2', 'X TKR 3', 'X TKR 4', 'X TKR 5', 'X TKR 6',
+  'XI TKR 1', 'XI TKR 2', 'XI TKR 3', 'XI TKR 4', 'XI TKR 5', 'XI TKR 6',
+  'XII TKR 1', 'XII TKR 2', 'XII TKR 3', 'XII TKR 4', 'XII TKR 5', 'XII TKR 6'
+];
+
 
   @override
   void initState() {
     super.initState();
     // Jika sedang Edit, masukkan data lama ke form
     if (widget.initialData != null) {
-      _namaController.text = widget.initialData!['name'];
-      _selectedKelas = widget.initialData!['class'];
+      _usernameController.text = widget.initialData!['username'] ?? '';
       _selectedRole = widget.initialData!['role'];
+      _selectedClass = widget.initialData!['class'];
+      _status = widget.initialData!['status'] ?? true;
+      // Untuk edit, email dan password tidak ditampilkan
     }
   }
-
-  void _validateAndSave() {
-    setState(() {
-      // Validasi Nama
-      _namaError = _namaController.text.trim().isEmpty ? "Nama tidak boleh kosong" : null;
-      // Validasi Kelas
-      _kelasError = _selectedKelas == null ? "Pilih kelas" : null;
-      // Validasi Role
-      _roleError = _selectedRole == null ? "Pilih role" : null;
-    });
-
-    // Jika semua null (artinya tidak ada error), maka simpan
-    if (_namaError == null && _kelasError == null && _roleError == null) {
-      Navigator.pop(context, {
-        "name": _namaController.text.trim(),
-        "class": _selectedKelas,
-        "role": _selectedRole,
-        "status": widget.initialData?['status'] ?? "Aktif",
-        "isActive": widget.initialData?['isActive'] ?? true,
-      });
+void _validateAndSave() {
+  setState(() {
+    if (widget.initialData == null) {
+      _emailError = _emailController.text.trim().isEmpty 
+        ? "Email tidak boleh kosong" 
+        : (!RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(_emailController.text)
+           ? "Format email tidak valid" 
+           : null);
+      
+      _passwordError = _passwordController.text.trim().isEmpty 
+        ? "Password tidak boleh kosong" 
+        : (_passwordController.text.length < 6 
+           ? "Password minimal 6 karakter" 
+           : null);
     }
+
+    _usernameError = _usernameController.text.trim().isEmpty ? "Username tidak boleh kosong" : null;
+    _roleError = _selectedRole == null ? "Pilih role" : null;
+  });
+
+  // Cetak log untuk debug
+  print("=== DEBUG VALIDASI ===");
+  print("Email: ${_emailController.text}, Error: $_emailError");
+  print("Password: ${_passwordController.text}, Error: $_passwordError");
+  print("Username: ${_usernameController.text}, Error: $_usernameError");
+  print("Role: $_selectedRole, Error: $_roleError");
+  print("Class: $_selectedClass");
+  print("Status: $_status");
+  print("=====================");
+
+  bool hasNoErrors = _usernameError == null && _roleError == null;
+  if (widget.initialData == null) {
+    hasNoErrors = hasNoErrors && _emailError == null && _passwordError == null;
   }
 
+  if (hasNoErrors) {
+    final result = {
+      "username": _usernameController.text.trim(),
+      "role": _selectedRole,
+      "status": _status,
+    };
+    if (widget.initialData == null) {
+      result["email"] = _emailController.text.trim();
+      result["password"] = _passwordController.text;
+    }
+    if (_selectedRole == 'peminjam' && _selectedClass != null) {
+      result["class"] = _selectedClass;
+    }
+    print("=== DATA YANG DIKIRIM ===");
+    print(result);
+    Navigator.pop(context, result);
+  } else {
+    print("Terdapat error, data tidak disimpan");
+  }
+}
+
+  
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -74,14 +119,48 @@ class _AddUserDialogState extends State<AddUserDialog> {
             ),
             const SizedBox(height: 20),
             
-            // Input Nama
-            _buildLabel("NAMA LENGKAP"),
+            // Input Email (hanya untuk tambah baru)
+            if (widget.initialData == null) ...[
+              _buildLabel("EMAIL"),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  hintText: "Masukkan email (contoh: user@example.com)",
+                  errorText: _emailError,
+                  filled: true,
+                  fillColor: AppColors.form,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                ),
+              ),
+              const SizedBox(height: 15),
+              
+              // Input Password (hanya untuk tambah baru)
+              _buildLabel("PASSWORD"),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: "Masukkan password (min 6 karakter)",
+                  errorText: _passwordError,
+                  filled: true,
+                  fillColor: AppColors.form,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                ),
+              ),
+              const SizedBox(height: 15),
+            ],
+
+            // Input Username
+            _buildLabel("USERNAME"),
             const SizedBox(height: 8),
             TextField(
-              controller: _namaController,
+              controller: _usernameController,
               decoration: InputDecoration(
-                hintText: "Masukkan nama lengkap",
-                errorText: _namaError, // Pesan error warna merah di sini
+                hintText: "Masukkan username",
+                errorText: _usernameError,
                 filled: true,
                 fillColor: AppColors.form,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
@@ -90,22 +169,37 @@ class _AddUserDialogState extends State<AddUserDialog> {
             
             const SizedBox(height: 15),
 
-            // Dropdown Kelas & Role
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _buildDropdownField("KELAS", _listKelas, _selectedKelas, _kelasError, (val) {
-                    setState(() { _selectedKelas = val; _kelasError = null; });
-                  }),
-                ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: _buildDropdownField("ROLE", _listRole, _selectedRole, _roleError, (val) {
-                    setState(() { _selectedRole = val; _roleError = null; });
-                  }),
-                ),
-              ],
+            // Dropdown Role
+            _buildDropdownField("ROLE", _listRole, _selectedRole, _roleError, (val) {
+              setState(() { 
+                _selectedRole = val; 
+                _roleError = null;
+                // Reset class when role changes
+                if (val != 'peminjam') {
+                  _selectedClass = null;
+                }
+              });
+            }),
+            
+            const SizedBox(height: 15),
+
+            // Dropdown Class (hanya untuk peminjam)
+            if (_selectedRole == 'peminjam')
+              _buildDropdownField("CLASS", _listClass, _selectedClass, null, (val) {
+                setState(() { _selectedClass = val; });
+              }),
+            
+            const SizedBox(height: 15),
+
+            // Status Toggle
+            _buildLabel("STATUS"),
+            SwitchListTile(
+              title: Text(_status ? 'Aktif' : 'Nonaktif'),
+              value: _status,
+              onChanged: (value) {
+                setState(() => _status = value);
+              },
+              activeColor: AppColors.seli,
             ),
 
             const SizedBox(height: 30),
@@ -143,13 +237,16 @@ class _AddUserDialogState extends State<AddUserDialog> {
           decoration: BoxDecoration(
             color: AppColors.form,
             borderRadius: BorderRadius.circular(10),
-            border: error != null ? Border.all(color: Colors.red) : null, // Border merah jika error
+            border: error != null ? Border.all(color: Colors.red) : null,
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               isExpanded: true,
               value: value,
-              items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14)))).toList(),
+              items: items.map((e) => DropdownMenuItem(
+                value: e, 
+                child: Text(e.toUpperCase(), style: const TextStyle(fontSize: 14))
+              )).toList(),
               onChanged: onChanged,
             ),
           ),

@@ -5,8 +5,8 @@ import 'package:inventory_alat/admin/component/navbar.dart';
 import 'package:inventory_alat/admin/component/user/add_user_dialog.dart';
 import 'package:inventory_alat/admin/component/user/user_card.dart';
 import 'package:inventory_alat/admin/screen/admin/user/user_detail_page.dart';
-import 'package:inventory_alat/colors.dart';
 import 'package:inventory_alat/service/user_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserManagementPage extends StatefulWidget {
   const UserManagementPage({super.key});
@@ -20,7 +20,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
   String _notifMessage = "";
   bool _isLoading = false;
 
-  // Data Filter untuk Pencarian
   List<Map<String, dynamic>> _filteredUsers = [];
   List<Map<String, dynamic>> _allUsers = [];
   final TextEditingController _searchController = TextEditingController();
@@ -47,35 +46,11 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
   void _runFilter(String query) {
     setState(() {
-<<<<<<< HEAD
-      if (query.isEmpty) {
-        _filteredUsers = _allUsers;
-      } else {
-        _filteredUsers = _allUsers
-            .where(
-              (user) =>
-                  user['name'].toLowerCase().contains(query.toLowerCase()),
-            )
-            .toList();
-      }
-    });
-  }
-
-  void _triggerNotification(String message) {
-    setState(() {
-      _notifMessage = message;
-      _showNotification = true;
-    });
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) setState(() => _showNotification = false);
-    });
-  }
-=======
       _filteredUsers = query.isEmpty
           ? _allUsers
           : _allUsers
               .where(
-                (u) => u['name']
+                (u) => u['username']
                     .toString()
                     .toLowerCase()
                     .contains(query.toLowerCase()),
@@ -84,106 +59,168 @@ class _UserManagementPageState extends State<UserManagementPage> {
     });
   }
 
-  Future<void> _addUser() async {
+  // ==========================
+  // TAMBAH USER (SignUp + Insert)
+  // ==========================
+  void _addNewUser() async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => const AddUserDialog(),
     );
 
     if (result != null) {
-      await _userService.addUser(result);
-      await _loadUsers();
+      setState(() => _isLoading = true);
+
+      try {
+        // 1️⃣ Signup user di Supabase Auth
+        final response = await Supabase.instance.client.auth.signUp(
+          email: result['email'],
+          password: result['password'],
+        );
+
+        final userId = response.user?.id;
+
+        if (userId != null) {
+          // 2️⃣ Insert ke tabel users
+          await Supabase.instance.client.from('users').insert({
+            'id_user': userId,
+            'username': result['username'],
+            'role': result['role'] ?? 'peminjam',
+            'status': true,
+            'class': result['class'] ?? '-',
+          });
+
+          // 3️⃣ Refresh data
+          await _loadData();
+
+          // 4️⃣ Notifikasi sukses
+          _showTopNotification(
+            context,
+            "User ${result['username']} berhasil disimpan",
+          );
+        } else {
+          _showErrorDialog("Gagal membuat user, id dari auth kosong.");
+        }
+      } catch (e) {
+        _showErrorDialog("Error adding user: ${e.toString()}");
+      } finally {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  Future<void> _editUser(Map<String, dynamic> user) async {
+  // ==========================
+  // EDIT USER
+  // ==========================
+  void _editUser(Map<String, dynamic> user) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => AddUserDialog(initialData: user),
     );
 
     if (result != null) {
-      await _userService.updateUser(user['id_user'], result);
-      await _loadUsers();
+      setState(() => _isLoading = true);
+      try {
+        // Tambahkan id_user untuk edit
+        result['id_user'] = user['id_user'];
+        await _userService.addUser(result); // Gunakan addUser yang sama karena sudah handle edit
+        await _loadData();
+        _showTopNotification(context, "Data ${result['username']} diperbarui");
+      } catch (e) {
+        _showErrorDialog("Gagal mengupdate user: ${e.toString()}");
+      } finally {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-                               
->>>>>>> 4fe59e9 (target 3)
+  // ==========================
+  // HAPUS USER
+  // ==========================
+  void _confirmDelete(Map<String, dynamic> user) {
+    _showDeleteConfirmation(context, user['username'], () async {
+      setState(() => _isLoading = true);
+      try {
+        await _userService.deleteUser(user['id_user']);
+        await _loadData();
+        _showTopNotification(context, "Berhasil menghapus ${user['username']}");
+      } catch (e) {
+        _showErrorDialog(
+          "Gagal menghapus: Mungkin user ini masih terkait dengan data lain.",
+        );
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    });
+  }
 
   void _showDeleteConfirmation(
-    BuildContext context,
-    String name,
-    VoidCallback onDelete,
-  ) {
+      BuildContext context, String name, VoidCallback onDelete) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-          ),
-          elevation: 0,
-          backgroundColor: Colors.white,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 30),
-              Text(
-                "Konfirmasi Hapus",
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(25),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 30),
+            Text(
+              "Konfirmasi Hapus",
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              "Yakin ingin menghapus $name?",
+              style: GoogleFonts.poppins(color: Colors.black54, fontSize: 14),
+            ),
+            const SizedBox(height: 25),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(
+                      "Batal",
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFF3B71B9),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                "Yakin ingin menghapus?",
-                style: GoogleFonts.poppins(color: Colors.black54, fontSize: 14),
-              ),
-              const SizedBox(height: 25),
-              // Garis Pemisah
-              const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        "Batal",
-                        style: GoogleFonts.poppins(
-                          color: const Color(0xFF3B71B9),
-                          fontWeight: FontWeight.w600,
-                        ),
+                Container(
+                  width: 1,
+                  height: 50,
+                  color: const Color(0xFFEEEEEE),
+                ),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      onDelete();
+                    },
+                    child: Text(
+                      "Hapus",
+                      style: GoogleFonts.poppins(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                  Container(
-                    width: 1,
-                    height: 50,
-                    color: const Color(0xFFEEEEEE),
-                  ), // Garis Vertikal
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        onDelete();
-                      },
-                      child: Text(
-                        "Hapus",
-                        style: GoogleFonts.poppins(
-                          color: Colors.red,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -236,7 +273,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
 
     overlayState.insert(overlayEntry);
-    // Hilang otomatis setelah 2 detik
     Future.delayed(const Duration(seconds: 2), () => overlayEntry.remove());
   }
 
@@ -256,69 +292,9 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
   }
 
-  // Update fungsi TAMBAH dengan validasi & loading
-  void _addNewUser() async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (_) => const AddUserDialog(),
-    );
-
-    if (result != null) {
-      setState(() => _isLoading = true); // Mulai loading
-      try {
-        await _userService.addUser(result);
-        await _loadData();
-        _showTopNotification(
-          context,
-          "User ${result['name']} berhasil disimpan",
-        );
-      } catch (e) {
-        _showErrorDialog(e.toString());
-      } finally {
-        setState(() => _isLoading = false); // Berhenti loading
-      }
-    }
-  }
-
-  // Update fungsi EDIT
-  void _editUser(Map<String, dynamic> user) async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (_) => AddUserDialog(initialData: user),
-    );
-
-    if (result != null) {
-      setState(() => _isLoading = true);
-      try {
-        await _userService.updateUser(user['id_user'], result);
-        await _loadData();
-        _showTopNotification(context, "Data ${result['name']} diperbarui");
-      } catch (e) {
-        _showErrorDialog(e.toString());
-      } finally {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  // Update fungsi HAPUS
-  void _confirmDelete(Map<String, dynamic> user) {
-    _showDeleteConfirmation(context, user['name'], () async {
-      setState(() => _isLoading = true);
-      try {
-        await _userService.deleteUser(user['id_user'], user['name']);
-        await _loadData();
-        _showTopNotification(context, "Berhasil menghapus ${user['name']}");
-      } catch (e) {
-        _showErrorDialog(
-          "Gagal menghapus: Mungkin user ini masih terkait dengan data lain.",
-        );
-      } finally {
-        setState(() => _isLoading = false);
-      }
-    });
-  }
-
+  // ==========================
+  // BUILD
+  // ==========================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -332,10 +308,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                 padding: const EdgeInsets.fromLTRB(25, 20, 25, 10),
                 child: Row(
                   children: [
-                    _buildSquareBtn(
-                      Icons.arrow_back,
-                      () => Navigator.pop(context),
-                    ),
+                    _buildSquareBtn(Icons.arrow_back, () => Navigator.pop(context)),
                     const SizedBox(width: 15),
                     Text(
                       "Manajemen User",
@@ -347,32 +320,15 @@ class _UserManagementPageState extends State<UserManagementPage> {
                     const Spacer(),
                     _buildSquareBtn(
                       Icons.add,
-                      () async {
-                        final result = await showDialog<Map<String, dynamic>>(
-                          context: context,
-                          builder: (_) => const AddUserDialog(),
-                        );
-                        if (result != null) {
-                          await _userService.addUser(result);
-                          await _loadUsers();
-
-                          _triggerNotification(
-                            "User ${result['name']} ditambahkan",
-                          );
-                        }
-                      },
+                      _addNewUser,
                       color: const Color(0xFF3B71B9),
                       iconColor: Colors.white,
                     ),
                   ],
                 ),
               ),
-              // Search Bar
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 25,
-                  vertical: 10,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
                 child: TextField(
                   controller: _searchController,
                   onChanged: _runFilter,
@@ -388,64 +344,42 @@ class _UserManagementPageState extends State<UserManagementPage> {
                   ),
                 ),
               ),
-              // List User
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 25),
-                  itemCount: _filteredUsers.length,
-                  itemBuilder: (context, index) {
-                    final user = _filteredUsers[index];
-                    return UserCard(
-  name: user['name'] ?? 'Tanpa Nama',
-  role: user['role'] ?? '-',
-  status: user['status'] == true ? 'Aktif' : 'Nonaktif',
-  isActive: user['status'] ?? false,
-  onDelete: () {
-    _showDeleteConfirmation(
-      context,
-      user['name'] ?? 'User',
-      () async {
-        await _userService.deleteUser(user['id_user']);
-        await _loadUsers();
-        _showTopNotification(
-          context,
-          "User ${user['name']} dihapus",
-        );
-      },
-    );
-  },
-
-                      onEdit: () => _editUser(user),
-                      onTapProfile: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                UserDetailPage(userData: user),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 25),
+                        itemCount: _filteredUsers.length,
+                        itemBuilder: (context, index) {
+                          final user = _filteredUsers[index];
+                          return UserCard(
+                            name: user['username'] ?? 'Tanpa Nama',
+                            role: user['role'] ?? '-',
+                            status: user['status'] == true ? 'Aktif' : 'Nonaktif',
+                            className: user['class'],
+                            isActive: user['status'] ?? false,
+                            onDelete: () => _confirmDelete(user),
+                            onEdit: () => _editUser(user),
+                            onTapProfile: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      UserDetailPage(userData: user),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
               ),
             ],
           ),
-          // Floating Notification
-          if (_showNotification)
-            Positioned(
-              top: 50,
-              left: 20,
-              right: 20,
-              child: _buildNotifWidget(_notifMessage),
-            ),
         ],
       ),
       bottomNavigationBar: CustomNavbar(
         selectedIndex: 1,
-        onItemTapped: (index) {
-          Navigator.pop(context);
-        },
+        onItemTapped: (index) => Navigator.pop(context),
       ),
     );
   }
@@ -465,27 +399,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: iconColor, size: 20),
-      ),
-    );
-  }
-
-  Widget _buildNotifWidget(String msg) {
-    return Material(
-      elevation: 10,
-      borderRadius: BorderRadius.circular(15),
-      child: Container(
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: const Color(0xFF162D4A),
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 15),
-            Text(msg, style: GoogleFonts.poppins(color: Colors.white)),
-          ],
-        ),
       ),
     );
   }

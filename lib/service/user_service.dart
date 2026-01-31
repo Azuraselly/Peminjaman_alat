@@ -1,82 +1,113 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserService {
-<<<<<<< HEAD
   final _supabase = Supabase.instance.client;
 
   Future<List<Map<String, dynamic>>> getAllUsers() async {
-    final response = await _supabase.from('users').select().order('username');
-    return List<Map<String, dynamic>>.from(response);
+    try {
+      final response = await _supabase.from('users').select().order('username');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print('Error fetching users: $e');
+      rethrow;
+    }
   }
 
- Future<void> addUser(Map<String, dynamic> data) async {
-    await _supabase.from('users').insert({
-      'username': data['username'], 
-      'role': data['role'].toString().toLowerCase(),
-      'status': data['status'] ?? true, // Kirim boolean true/false
-    });
-  }
-
-Future<void> updateUser(dynamic id, Map<String, dynamic> data) async {
-    await _supabase.from('users').update({
-      'username': data['username'],
-      'role': data['role'].toString().toLowerCase(),
-      'status': data['status'],
-    }).eq('id_user', id);
-  }
-  // DELETE
- Future<void> deleteUser(dynamic id) async {
-    if (id == null) return;
-    await _supabase.from('users').delete().eq('id_user', id);
-  }
-}
-=======
-  final SupabaseClient _client = Supabase.instance.client;
-
-  // Ambil semua user
-  Future<List<Map<String, dynamic>>> getAllUsers() async {
-    final res = await _client.from('users').select().order('created_at', ascending: false);
-    return List<Map<String, dynamic>>.from(res);
-  }
-
-  // Tambah user
   Future<void> addUser(Map<String, dynamic> data) async {
-    final res = await _client.from('users').insert({
-      'username': data['name'],
-      'role': data['role']?.toLowerCase(),
-      'status': data['isActive'],
-      'class': data['class'],
-    });
-    if (res == null) throw Exception("Gagal menambahkan user");
+    try {
+      // Jika ada email dan password, buat user di Supabase Auth dulu
+      if (data['email'] != null && data['password'] != null) {
+        // Validasi email sebelum mencoba sign up
+        String email = data['email'];
+        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(email) || email.split('@')[0].length < 3) {
+          throw Exception('Email tidak valid. Gunakan format: user@example.com');
+        }
+        
+        // 1. Sign up user di Supabase Auth
+        final authResponse = await _supabase.auth.signUp(
+          email: email,
+          password: data['password'],
+        );
+
+        if (authResponse.user == null) {
+          throw Exception('Gagal membuat user di Supabase Auth');
+        }
+
+        // 2. Buat record di tabel users dengan id_user dari auth
+        final userData = {
+          'id_user': authResponse.user!.id,
+          'username': data['username'], 
+          'role': data['role'].toString().toLowerCase(),
+          'status': data['status'] ?? true,
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+        
+        // Tambahkan class hanya jika ada dan bukan "-"
+        if (data['class'] != null && data['class'] != '-' && data['class'].toString().isNotEmpty) {
+          userData['class'] = data['class'];
+        }
+        
+        await _supabase.from('users').insert(userData);
+      } else {
+        // Untuk edit user (tanpa email/password)
+        // Update data user yang sudah ada
+        final updateData = {
+          'username': data['username'],
+          'role': data['role'].toString().toLowerCase(),
+          'status': data['status'],
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+        
+        // Tambahkan class hanya jika ada dan bukan "-"
+        if (data['class'] != null && data['class'] != '-' && data['class'].toString().isNotEmpty) {
+          updateData['class'] = data['class'];
+        } else if (data['role'] != 'peminjam') {
+          // Untuk role non-peminjam, set class ke null
+          updateData['class'] = null;
+        }
+        
+        await _supabase.from('users').update(updateData).eq('id_user', data['id_user']);
+      }
+    } on AuthException catch (e) {
+      // Handle specific auth errors
+      if (e.code == 'email_address_invalid') {
+        throw Exception('Format email tidak valid. Gunakan format: user@example.com (minimal 3 karakter sebelum @)');
+      } else if (e.code == 'weak_password') {
+        throw Exception('Password terlalu lemah. Minimal 6 karakter.');
+      } else if (e.code == 'email_exists') {
+        throw Exception('Email sudah terdaftar. Gunakan email lain.');
+      } else {
+        throw Exception('Error auth: ${e.message}');
+      }
+    } catch (e) {
+      print('Error adding/updating user: $e');
+      rethrow;
+    }
   }
 
-  // Update user
   Future<void> updateUser(String id, Map<String, dynamic> data) async {
-    final res = await _client
-        .from('users')
-        .update({
-          'username': data['name'],
-          'role': data['role']?.toLowerCase(),
-          'status': data['isActive'],
-          'class': data['class'],
-        })
-        .eq('id_user', id);
-    if (res == null) throw Exception("Gagal update user");
+    try {
+      await _supabase.from('users').update({
+        'username': data['username'],
+        'role': data['role'].toString().toLowerCase(),
+        'status': data['status'],
+        'class': data['class'],
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id_user', id);
+    } catch (e) {
+      print('Error updating user: $e');
+      rethrow;
+    }
   }
-
-  // Hapus user
+  
   Future<void> deleteUser(String id) async {
-    final res = await _client.from('users').delete().eq('id_user', id);
-    if (res == null) throw Exception("Gagal hapus user");
-  }
-
-  // Stream realtime (Supabase Realtime)
-  Stream<List<Map<String, dynamic>>> userStream() {
-    return _client
-        .from('users')
-        .stream(primaryKey: ['id_user'])
-        .order('created_at', ascending: false)
-        .map((event) => List<Map<String, dynamic>>.from(event));
+    try {
+      if (id.isEmpty) return;
+      await _supabase.from('users').delete().eq('id_user', id);
+    } catch (e) {
+      print('Error deleting user: $e');
+      rethrow;
+    }
   }
 }
->>>>>>> 4fe59e9 (target 3)

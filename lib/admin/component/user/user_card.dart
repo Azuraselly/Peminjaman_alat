@@ -7,6 +7,7 @@ class UserCard extends StatelessWidget {
   final String role;
   final String status;
   final bool isActive;
+  final String? className;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
   final VoidCallback onTapProfile;
@@ -17,6 +18,7 @@ class UserCard extends StatelessWidget {
     required this.role,
     required this.status,
     this.isActive = true,
+    this.className,
     required this.onDelete,
     required this.onEdit,
     required this.onTapProfile,
@@ -73,7 +75,7 @@ class UserCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _infoColumn("ROLE", role, Colors.black),
-               const SizedBox(width: 15),
+              const SizedBox(width: 15),
               _infoColumn(
                 "STATUS",
                 status,
@@ -81,6 +83,17 @@ class UserCard extends StatelessWidget {
               ),
             ],
           ),
+          if (role.toLowerCase() == 'peminjam')
+            Padding(
+              padding: const EdgeInsets.only(top: 15),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _infoColumn("CLASS", className ?? '-', Colors.black),
+                  const SizedBox(width: 15),
+                ],
+              ),
+            ),
          const Divider(height: 30),
           Row(
             children: [

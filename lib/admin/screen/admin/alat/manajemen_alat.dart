@@ -3,8 +3,11 @@ import 'package:inventory_alat/admin/component/header.dart';
 import 'package:inventory_alat/admin/component/navbar.dart';
 import 'package:inventory_alat/admin/component/alat/add_alat.dart';
 import 'package:inventory_alat/admin/component/alat/alat_card.dart';
+import 'package:inventory_alat/admin/screen/admin/alat/detail_alat.dart';
 import 'package:inventory_alat/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:inventory_alat/service/alat_service.dart';
+import 'package:inventory_alat/service/kategori_service.dart';
 
 class ManajemenAlatPage extends StatefulWidget {
   const ManajemenAlatPage({super.key});
@@ -14,77 +17,130 @@ class ManajemenAlatPage extends StatefulWidget {
 
 class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
   final AlatService _alatService = AlatService();
+  final KategoriService _kategoriService = KategoriService();
   List<Map<String, dynamic>> _allAlat = [];
+  bool _isLoading = false;
   bool _showNotification = false;
   String _notifMessage = "";
+  bool _notifIsSuccess = true;
 
-<<<<<<< HEAD
-  List<Map<String, dynamic>> _allAlat = [
-    {
-      "name": "Tang Kombinasi",
-      "kategori": "ALAT TANGAN",
-      "stok": "5 Unit",
-      "kondisi": "Baik",
-      "desc": "Tang serbaguna",
-    },
-    {
-      "name": "Dongkrak Buaya",
-      "kategori": "SERVIS",
-      "stok": "8 Unit",
-      "kondisi": "Rusak Ringan",
-      "desc": "Dongkrak hidrolik",
-    },
-  ];
-
-void _openForm({Map<String, dynamic>? item, int? index}) {
-=======
   @override
   void initState() {
     super.initState();
-    _loadAlat();
-    // Realtime listener
-    _alatService.supabase.from('alat').stream(primaryKey: ['id_alat']).listen((_) => _loadAlat());
+    _loadAllData();
+    // Setup realtime listeners
+    _setupRealtimeListeners();
   }
 
-  Future<void> _loadAlat() async {
-    final data = await _alatService.getAllAlat();
-    setState(() {
-      _allAlat = data.map((e) => {
-        'id': e['id_alat'],
-        'name': e['nama_alat'],
-        'kategori': e['kategori']?['nama_kategori'] ?? '-',
-        'stok': '${e['stok_alat']} Unit',
-        'kondisi': e['kondisi_alat'],
-        'desc': e['deskripsi'],
-      }).toList();
+  void _setupRealtimeListeners() {
+    // Listen for alat changes
+    _alatService.client.from('alat').stream(primaryKey: ['id_alat']).listen((_) {
+      _loadAlat();
+    });
+    
+    // Listen for kategori changes
+    _kategoriService.client.from('kategori').stream(primaryKey: ['id_kategori']).listen((_) {
+      _loadKategori();
     });
   }
 
+  Future<void> _loadAllData() async {
+    setState(() => _isLoading = true);
+    try {
+      await Future.wait([_loadAlat(), _loadKategori()]);
+    } catch (e) {
+      _showNotificationMessage("Gagal memuat data: ${e.toString()}", false);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadAlat() async {
+    try {
+      final data = await _alatService.getAllAlat();
+      setState(() {
+        _allAlat = data.map((e) {
+          // Safely handle category data
+          final kategoriData = e['kategori'];
+          int categoryId = 0;
+          String categoryName = '-';
+          
+          if (kategoriData != null) {
+            if (kategoriData is Map<String, dynamic>) {
+              categoryId = kategoriData['id_kategori'] is int 
+                  ? kategoriData['id_kategori'] 
+                  : int.tryParse(kategoriData['id_kategori']?.toString() ?? '0') ?? 0;
+              categoryName = kategoriData['nama_kategori']?.toString() ?? '-';
+            }
+          }
+          
+          return {
+            'id_alat': e['id_alat'] is int 
+                ? e['id_alat'] 
+                : int.tryParse(e['id_alat']?.toString() ?? '0') ?? 0,
+            'nama_alat': e['nama_alat']?.toString() ?? '',
+            'kategori': {
+              'id_kategori': categoryId,
+              'nama_kategori': categoryName,
+            },
+            'id_kategori': categoryId,
+            'stok_alat': e['stok_alat'] is int 
+                ? e['stok_alat'] 
+                : int.tryParse(e['stok_alat']?.toString() ?? '0') ?? 0,
+            'kondisi_alat': e['kondisi_alat']?.toString() ?? '',
+            'deskripsi': e['deskripsi']?.toString() ?? '',
+            'gambar': e['gambar']?.toString(),
+            'created_at': e['created_at']?.toString(),
+          };
+        }).toList();
+      });
+    } catch (e) {
+      throw Exception('Failed to load alat: $e');
+    }
+  }
+
+  Future<void> _loadKategori() async {
+    try {
+      // Load kategori but don't store in state since we're not using it in UI
+      await _kategoriService.getAllKategori();
+    } catch (e) {
+      throw Exception('Failed to load kategori: $e');
+    }
+  }
+
   void _openForm({Map<String, dynamic>? item, int? index}) {
->>>>>>> 4fe59e9 (target 3)
     showDialog(
       context: context,
       builder: (_) => AddAlat(
         initialData: item,
-        onSaveSuccess: (newData) {
-          _triggerNotification(item != null ? "Berhasil update ${newData['nama_alat']}" : "Berhasil tambah ${newData['nama_alat']}");
-        },
+        onShowNotification: _showNotificationMessage,
       ),
-    );
+    ).then((_) {
+      // Refresh data after dialog closes
+      _loadAlat();
+    });
   }
-<<<<<<< HEAD
-=======
 
   void _deleteAlat(int index) async {
-    await _alatService.deleteAlat(_allAlat[index]['id']);
-    _triggerNotification("Berhasil hapus ${_allAlat[index]['name']}");
-    _loadAlat();
+    setState(() => _isLoading = true);
+    try {
+      final result = await _alatService.deleteAlat(_allAlat[index]['id_alat']);
+      if (result['success'] == true) {
+        _showNotificationMessage("Berhasil menghapus ${_allAlat[index]['nama_alat']}", true);
+        // Reload data to ensure UI is updated
+        await _loadAlat();
+      }
+    } catch (e) {
+      _showNotificationMessage("Gagal menghapus: ${e.toString()}", false);
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
->>>>>>> 4fe59e9 (target 3)
 
-  void _triggerNotification(String message) {
+  void _showNotificationMessage(String message, bool isSuccess) {
     setState(() {
       _notifMessage = message;
+      _notifIsSuccess = isSuccess;
       _showNotification = true;
     });
     Future.delayed(const Duration(seconds: 3), () {
@@ -138,7 +194,11 @@ void _openForm({Map<String, dynamic>? item, int? index}) {
                   child: TextButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      _triggerNotification(name);
+                      // Find the correct index of the item to delete
+                      int itemIndex = _allAlat.indexWhere((item) => item['nama_alat'] == name);
+                      if (itemIndex != -1) {
+                        _deleteAlat(itemIndex);
+                      }
                     },
                     child: Text(
                       "Hapus",
@@ -175,14 +235,6 @@ void _openForm({Map<String, dynamic>? item, int? index}) {
         child: Icon(icon, color: iconColor, size: 20),
       ),
     );
-  }
-
-  void _deleteAlat(int index) {
-    String deletedName = _allAlat[index]['name'];
-    setState(() {
-      _allAlat.removeAt(index);
-      _notifMessage = "Berhasil menghapus $deletedName";
-    });
   }
 
   @override
@@ -261,24 +313,68 @@ void _openForm({Map<String, dynamic>? item, int? index}) {
                 ),
               ),
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 25),
-                  itemCount: _allAlat.length,
-                  itemBuilder: (context, index) {
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _allAlat.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.inventory_2, size: 64, color: Colors.grey[400]),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Belum ada data alat',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Tekan tombol + untuk menambah alat baru',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 25),
+                            itemCount: _allAlat.length,
+                            itemBuilder: (context, index) {
                     final item = _allAlat[index];
                     return AlatCard(
-                      name: item['name'],
-                      kategoriName: item['kategori'],
-                      stok: item['stok'],
-                      kondisi: item['kondisi'],
+                      name: item['nama_alat'],
+                      kategoriName: item['kategori']?['nama_kategori'] ?? '-',
+                      stok: '${item['stok_alat']} Unit',
+                      kondisi: item['kondisi_alat'],
+                      imageUrl: item['gambar'],
                       onDelete: () {
-                        _showDeleteConfirmation(item['name']);
-                        _deleteAlat(index);
-                      }, // Panggil konfirmasi hapus
-                      onTapDetail: () => _openForm(
-                        item: item,
-                        index: index,
-                      ), // Sekarang Tap Detail berfungsi sebagai Edit
+                        _showDeleteConfirmation(item['nama_alat']);
+                      },
+                      onTapDetail: () {
+                        // Navigate to detail page
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailAlatPage(alatData: item),
+                          ),
+                        );
+                      },
+                      onEdit: () {
+                        // Open edit dialog
+                        showDialog(
+                          context: context,
+                          builder: (_) => AddAlat(
+                            initialData: item,
+                            onShowNotification: _showNotificationMessage,
+                          ),
+                        ).then((_) {
+                          _loadAlat();
+                        });
+                      },
                     );
                   },
                 ),
@@ -296,25 +392,40 @@ void _openForm({Map<String, dynamic>? item, int? index}) {
                 child: Container(
                   padding: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: _notifIsSuccess 
+                        ? const Color(0xFF3B71B9).withOpacity(0.9)
+                        : Colors.red.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        "Admin 01",
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Icon(
+                        _notifIsSuccess ? Icons.check_circle : Icons.error,
+                        color: Colors.white,
+                        size: 20,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _notifMessage,
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: Colors.black87,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _notifIsSuccess ? "Sukses" : "Error",
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _notifMessage,
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -324,7 +435,7 @@ void _openForm({Map<String, dynamic>? item, int? index}) {
             ),
         ],
       ),
-       bottomNavigationBar: CustomNavbar(
+      bottomNavigationBar: CustomNavbar(
         selectedIndex: 1, 
         onItemTapped: (index) {
           Navigator.pop(context); // Kembali ke navigasi utama
