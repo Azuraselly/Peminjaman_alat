@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:inventory_alat/admin/screen/beranda.dart';
+import 'package:inventory_alat/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:inventory_alat/auth/login_page.dart';
 import 'package:inventory_alat/admin/screen/admin.dart';
@@ -26,7 +27,11 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFFF5F5F5),
       ),
-      home: const BerandaPage(),
+     initialRoute: '/', 
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/login': (context) => const LoginPage(),
+      }
     );
   }
 }
