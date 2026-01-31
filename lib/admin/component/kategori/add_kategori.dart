@@ -3,9 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:inventory_alat/colors.dart';
 
 class AddKategori extends StatefulWidget {
-  final Function(String name) onSaveSuccess; // Callback untuk notifikasi
+  final Map<String, dynamic>? initialData; // Untuk edit
 
-  const AddKategori({super.key, required this.onSaveSuccess});
+  const AddKategori({super.key, this.initialData});
 
   @override
   State<AddKategori> createState() => _AddKategoriState();
@@ -14,6 +14,36 @@ class AddKategori extends StatefulWidget {
 class _AddKategoriState extends State<AddKategori> {
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _deskripsiController = TextEditingController();
+  String? _namaError;
+  String? _deskripsiError;
+
+  @override
+  void initState() {
+    super.initState();
+    // Jika sedang edit, masukkan data lama
+    if (widget.initialData != null) {
+      _namaController.text = widget.initialData!['nama_kategori'] ?? '';
+      _deskripsiController.text = widget.initialData!['deskripsi_kategori'] ?? '';
+    }
+  }
+
+  void _validateAndSave() {
+    setState(() {
+      // Validasi nama kategori
+      _namaError = _namaController.text.trim().isEmpty 
+        ? "Nama kategori tidak boleh kosong" 
+        : null;
+    });
+
+    if (_namaError == null) {
+      final result = {
+        "nama_kategori": _namaController.text.trim(),
+        "deskripsi_kategori": _deskripsiController.text.trim(),
+      };
+      
+      Navigator.pop(context, result);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +66,7 @@ class _AddKategoriState extends State<AddKategori> {
                     icon: const Icon(Icons.arrow_back),
                   ),
                   Text(
-                    "Tambah Kategori",
+                    widget.initialData == null ? "Tambah Kategori" : "Edit Kategori",
                     style: GoogleFonts.poppins(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
@@ -50,15 +80,37 @@ class _AddKategoriState extends State<AddKategori> {
 
               _buildLabel("NAMA KATEGORI"),
               const SizedBox(height: 8),
-              _buildTextField(_namaController, "Masukkan nama kategori"),
+              TextField(
+                controller: _namaController,
+                decoration: InputDecoration(
+                  hintText: "Masukkan nama kategori",
+                  errorText: _namaError,
+                  hintStyle: GoogleFonts.poppins(fontSize: 15, color: AppColors.abuh),
+                  filled: true,
+                  fillColor: AppColors.form,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
               const SizedBox(height: 15),
 
               _buildLabel("DESKRIPSI"),
               const SizedBox(height: 8),
-              _buildTextField(
-                _deskripsiController,
-                "Masukkan deskripsi",
-                maxLines: 2,
+              TextField(
+                controller: _deskripsiController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: "Masukkan deskripsi (opsional)",
+                  hintStyle: GoogleFonts.poppins(fontSize: 15, color: AppColors.abuh),
+                  filled: true,
+                  fillColor: AppColors.form,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
               ),
               const SizedBox(height: 25),
 
@@ -67,21 +119,7 @@ class _AddKategoriState extends State<AddKategori> {
                   width: double.infinity,
                   height: 60,
                   child: ElevatedButton(
-                    onPressed: () {
-                      if (_namaController.text.isNotEmpty) {
-                        String namaKategori = _namaController.text;
-                        Navigator.pop(context);
-
-                        // Memanggil fungsi notifikasi di halaman utama
-                        widget.onSaveSuccess(namaKategori);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Nama dan Kategori wajib diisi!"),
-                          ),
-                        );
-                      }
-                    },
+                    onPressed: _validateAndSave,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.seli,
                       shape: RoundedRectangleBorder(
@@ -89,7 +127,7 @@ class _AddKategoriState extends State<AddKategori> {
                       ),
                     ),
                     child: Text(
-                      "Simpan Alat",
+                      "SIMPAN DATA",
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,

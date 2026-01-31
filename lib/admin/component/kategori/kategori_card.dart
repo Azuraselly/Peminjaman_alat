@@ -7,6 +7,7 @@ class KategoriCard extends StatelessWidget {
   final String name;
   final String deskripsi;
   final String jumlah;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onTapDetail;
 
@@ -15,6 +16,7 @@ class KategoriCard extends StatelessWidget {
     required this.name,
     required this.deskripsi,
     required this.jumlah,
+    required this.onEdit,
     required this.onDelete,
     required this.onTapDetail,
   });
@@ -104,7 +106,7 @@ class KategoriCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              _actionIcon(Icons.edit_outlined, Colors.blue, onTapDetail),
+              _actionIcon(Icons.edit_outlined, Colors.blue, onEdit),
               const SizedBox(width: 10),
               _actionIcon(Icons.delete_outline, Colors.red, onDelete),
             ],
