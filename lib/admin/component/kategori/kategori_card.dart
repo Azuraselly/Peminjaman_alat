@@ -21,8 +21,6 @@ class KategoriCard extends StatelessWidget {
     required this.onTapDetail,
   });
 
-
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -44,7 +42,9 @@ class KategoriCard extends StatelessWidget {
                 radius: 35,
                 backgroundColor: AppColors.aulia,
                 child: Text(
-                  name.length >= 2 ? name.substring(0, 2).toUpperCase() : name.toUpperCase(),
+                  name.length >= 2
+                      ? name.substring(0, 2).toUpperCase()
+                      : name.toUpperCase(),
                   style: GoogleFonts.poppins(
                     color: AppColors.selly,
                     fontWeight: FontWeight.w900,
@@ -59,16 +59,18 @@ class KategoriCard extends StatelessWidget {
                   Text(
                     name,
                     style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                        color: Colors.black),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      color: Colors.black,
+                    ),
                   ),
                   Text(
                     deskripsi,
                     style: GoogleFonts.poppins(
-                        color: AppColors.abuh,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900),
+                      color: AppColors.abuh,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ],
               ),
@@ -78,7 +80,11 @@ class KategoriCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _infoColumn("jumlah", jumlah, Colors.black), // Diubah dari TANGGAL ke jumlah
+              _infoColumn(
+                "jumlah",
+                jumlah,
+                Colors.black,
+              ), // Diubah dari TANGGAL ke jumlah
               const SizedBox(width: 15),
             ],
           ),
@@ -99,9 +105,10 @@ class KategoriCard extends StatelessWidget {
                   child: Text(
                     "DETAIL",
                     style: GoogleFonts.poppins(
-                        color: AppColors.abuh,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900),
+                      color: AppColors.abuh,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),

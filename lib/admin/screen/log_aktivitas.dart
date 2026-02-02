@@ -1,8 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class RiwayatPage extends StatelessWidget {
+class RiwayatPage extends StatefulWidget {
   const RiwayatPage({super.key});
+
+  @override
+  State<RiwayatPage> createState() => _RiwayatPageState();
+}
+
+class _RiwayatPageState extends State<RiwayatPage> {
+  final supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> _logs = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLogs();
+  }
+
+  Future<void> _loadLogs() async {
+    try {
+      final res = await supabase
+          .from('log_aktivitas') // ganti dengan nama tabel log kamu
+          .select('id, admin_name, activity, created_at')
+          .order('created_at', ascending: false);
+
+      setState(() {
+        _logs = List<Map<String, dynamic>>.from(res);
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching logs: $e');
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,32 +43,48 @@ class RiwayatPage extends StatelessWidget {
       backgroundColor: const Color(0xFFF8F9FA),
       body: Column(
         children: [
-
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              children: [
-                const SizedBox(height: 20),
-                Text(
-                  "Log Aktivitas",
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                
-                // Daftar Log Aktivitas
-                _buildLogCard("Admin Bengkel", "Melakukan verifikasi pengembalian alat ID #1LT001", "BARU SAJA"),
-                _buildLogCard("Admin Bengkel", "Melakukan verifikasi pengembalian alat ID #1LT001", "BARU SAJA"),
-                _buildLogCard("Admin Bengkel", "Melakukan verifikasi pengembalian alat ID #1LT001", "BARU SAJA"),
-              ],
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              "Log Aktivitas",
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Colors.black,
+              ),
             ),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _logs.isEmpty
+                    ? Center(
+                        child: Text(
+                          "Belum ada aktivitas",
+                          style: GoogleFonts.poppins(
+                            color: Colors.grey,
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: _logs.length,
+                        itemBuilder: (context, index) {
+                          final log = _logs[index];
+                          final createdAt = DateTime.tryParse(log['created_at'] ?? '') ?? DateTime.now();
+                          final timeAgo = _timeAgo(createdAt);
+                          return _buildLogCard(
+                            log['admin_name'] ?? "Admin",
+                            log['activity'] ?? "",
+                            timeAgo,
+                          );
+                        },
+                      ),
           ),
         ],
       ),
-    
     );
   }
 
@@ -89,5 +138,15 @@ class RiwayatPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _timeAgo(DateTime dateTime) {
+    final diff = DateTime.now().difference(dateTime);
+
+    if (diff.inSeconds < 60) return "Baru saja";
+    if (diff.inMinutes < 60) return "${diff.inMinutes} menit lalu";
+    if (diff.inHours < 24) return "${diff.inHours} jam lalu";
+    if (diff.inDays < 7) return "${diff.inDays} hari lalu";
+    return "${dateTime.day}/${dateTime.month}/${dateTime.year}";
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:inventory_alat/auth/login_page.dart';
 import 'package:inventory_alat/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CustomHeader extends StatelessWidget {
   const CustomHeader({super.key});
@@ -38,7 +40,7 @@ class CustomHeader extends StatelessWidget {
           ),
           _buildIcon(Icons.notifications_none),
           const SizedBox(width: 10),
-          _buildIcon(Icons.logout),
+          _buildLogout(context),
         ],
       ),
     );
@@ -71,4 +73,51 @@ class CustomHeader extends StatelessWidget {
       child: Icon(icon, color: Colors.white, size: 24),
     );
   }
+   Widget _buildLogout(BuildContext context) {
+  return InkWell(
+    onTap: () {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          title: const Text("Konfirmasi"),
+          content: const Text("Apakah kamu yakin ingin logout?"),
+          actions: [
+            // BATAL
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Batal"),
+            ),
+
+            // LOGOUT
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context); // tutup dialog
+
+                await Supabase.instance.client.auth.signOut();
+
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                  (route) => false,
+                );
+              },
+              child: const Text("Logout"),
+            ),
+          ],
+        ),
+      );
+    },
+    child: Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: AppColors.abumud.withOpacity(0.25),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.logout, color: Colors.white, size: 24),
+    ),
+  );
+}
 }

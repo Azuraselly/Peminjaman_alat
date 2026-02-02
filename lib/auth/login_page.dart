@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:inventory_alat/colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import 'package:inventory_alat/admin/screen/beranda.dart';
 import 'package:inventory_alat/petugas/screen/managemen_petugas_page.dart';
 import 'package:inventory_alat/peminjam/component/main_navigation.dart';
 
@@ -14,52 +17,78 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
   bool _isLoading = false;
   bool _obscureText = true;
 
+  // =============================
+  // LOGIN FUNCTION (FIX)
+  // =============================
   Future<void> _handleLogin() async {
     setState(() => _isLoading = true);
+
     try {
-      // 1. Proses Login Auth
-      final response = await Supabase.instance.client.auth.signInWithPassword(
+      final supabase = Supabase.instance.client;
+
+      final response = await supabase.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
       final user = response.user;
-      if (user != null) {
-        // 2. Ambil Role dari tabel 'profiles' (sesuaikan nama tabelmu)
-        final userData = await Supabase.instance.client
-            .from('users')
-            .select('role')
-            .eq('id_user', user.id)
-            .maybeSingle();
 
-        if (userData == null) {
-          _showErrorBanner();
-          return;
-        }
+      if (user == null) {
+        _showErrorBanner();
+        return;
+      }
 
-        String role = userData['role'];
+      /// 2️⃣ AMBIL ROLE DARI TABLE users
+      final userData = await supabase
+          .from('users')
+          .select('role')
+          .eq('id_user', user.id)
+          .maybeSingle();
 
-        // 3. Navigasi Berdasarkan Role
-        if (!mounted) return;
+      if (userData == null) {
+        _showErrorBanner();
+        return;
+      }
 
-        if (role == 'petugas') {
-          // Arahkan ke halaman utama Petugas
+      String role = userData['role'].toString().trim().toLowerCase();
+
+      print("LOGIN SUCCESS");
+      print("USER ID : ${user.id}");
+      print("ROLE    : $role");
+
+      if (!mounted) return;
+
+      switch (role) {
+        case 'admin':
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const BerandaPage()),
+          );
+          break;
+
+        case 'petugas':
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const PetugasMainScreen()),
           );
-        } else if (role == 'peminjam') {
-          // Arahkan ke halaman utama Peminjam
+          break;
+
+        case 'peminjam':
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const MainNavigationPeminjam()),
           );
-        }
+          break;
+
+        default:
+          _showErrorBanner();
       }
     } catch (e) {
+      print("LOGIN ERROR: $e");
       _showErrorBanner();
     } finally {
       setState(() => _isLoading = false);
@@ -83,15 +112,18 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                "error",
+                "Error",
                 style: GoogleFonts.poppins(
-                  color: Colors.black,
                   fontWeight: FontWeight.bold,
+                  color: Colors.black,
                 ),
               ),
               Text(
-                "Terjadi kesalahan / Data tidak sesuai",
-                style: GoogleFonts.poppins(color: Colors.black54, fontSize: 12),
+                "Data tidak valid",
+                style: GoogleFonts.poppins(
+                  color: Colors.black54,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -100,12 +132,13 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(25.0),
+          padding: const EdgeInsets.all(25),
           child: Container(
             padding: const EdgeInsets.all(30),
             decoration: BoxDecoration(
@@ -115,80 +148,49 @@ class _LoginPageState extends State<LoginPage> {
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
                   blurRadius: 20,
-                  spreadRadius: 5,
                 ),
               ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Logo EduGarage
-                Image.asset(
-                  'assets/logo.png',
-                  height: 120,
-                ), // Pastikan file ada di assets
-                const SizedBox(height: 10),
-                Text(
-                  "SISTEM AKSES BENGKEL",
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1A314D),
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 30),
+                Image.asset('assets/logo.png', height: 180),
 
-                // Input Username/Email
-                _buildLabel("USERNAME/EMAIL"),
+                const SizedBox(height: 15),
+
+                _buildLabel("EMAIL"),
                 _buildTextField(
                   controller: _emailController,
-                  hint: "masukkan ID pengguna..",
+                  hint: "Masukkan email...",
                   icon: Icons.email_outlined,
                 ),
+
                 const SizedBox(height: 20),
 
-                // Input Password
                 _buildLabel("PASSWORD"),
                 _buildTextField(
                   controller: _passwordController,
                   hint: "........",
                   icon: Icons.lock_outline,
                   isPassword: true,
-                  onToggle: () => setState(() => _obscureText = !_obscureText),
                   obscure: _obscureText,
+                  onToggle: () =>
+                      setState(() => _obscureText = !_obscureText),
                 ),
+
                 const SizedBox(height: 30),
 
-                // Tombol Masuk
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A314D),
-                    minimumSize: const Size(double.infinity, 55),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
                   onPressed: _isLoading ? null : _handleLogin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.seli,
+                    minimumSize: const Size(double.infinity, 55),
+                  ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "MASUK SEKARANG",
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            const Icon(
-                              Icons.arrow_forward,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ],
+                      :  Text(
+                          "MASUK SEKARANG",
+                          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600),
                         ),
                 ),
               ],
@@ -199,17 +201,20 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  // =============================
+  // WIDGET HELPER
+  // =============================
   Widget _buildLabel(String text) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 8.0, left: 5),
+        padding: const EdgeInsets.only(bottom: 6),
         child: Text(
           text,
           style: GoogleFonts.poppins(
-            fontSize: 10,
+            fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: Colors.blue.shade800,
+            color: AppColors.selly,
           ),
         ),
       ),
@@ -234,24 +239,17 @@ class _LoginPageState extends State<LoginPage> {
         obscureText: obscure,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey),
-          prefixIcon: Icon(icon, color: Colors.grey, size: 20),
+          hintStyle: GoogleFonts.poppins(fontSize: 12),
+          prefixIcon: Icon(icon),
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
-                    obscure
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    size: 20,
+                    obscure ? Icons.visibility_off : Icons.visibility,
                   ),
                   onPressed: onToggle,
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 15,
-            horizontal: 20,
-          ),
         ),
       ),
     );

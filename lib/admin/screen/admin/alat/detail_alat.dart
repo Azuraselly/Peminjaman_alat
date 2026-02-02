@@ -31,10 +31,18 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
                       IconButton(
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.arrow_back),
-                        style: IconButton.styleFrom(backgroundColor: Colors.white),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                        ),
                       ),
                       const SizedBox(width: 10),
-                      Text("Detail Alat", style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
+                      Text(
+                        "Detail Alat",
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 25),
@@ -44,55 +52,87 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(30),
-                      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20)],
+                      boxShadow: [
+                        BoxShadow(color: Colors.black12, blurRadius: 20),
+                      ],
                     ),
                     child: Column(
                       children: [
-                        // Avatar with first two letters of name
                         CircleAvatar(
                           radius: 45,
                           backgroundColor: const Color(0xFFE8EEF5),
                           child: Text(
-                            (alat['nama_alat'] ?? '?').length >= 2 
-                                ? alat['nama_alat'].substring(0, 2).toUpperCase() 
-                                : (alat['nama_alat'] ?? '?')[0].toUpperCase(), 
-                            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF3B71B9))),
+                            (alat['nama_alat'] ?? '?').length >= 2
+                                ? alat['nama_alat']
+                                      .substring(0, 2)
+                                      .toUpperCase()
+                                : (alat['nama_alat'] ?? '?')[0].toUpperCase(),
+                            style: GoogleFonts.poppins(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF3B71B9),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 20),
-                        Text(alat['nama_alat'] ?? 'Unknown Alat', 
-                            style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)),
+                        Text(
+                          alat['nama_alat'] ?? 'Unknown Alat',
+                          style: GoogleFonts.poppins(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         _buildTag((alat['kondisi_alat'] ?? '').toUpperCase()),
                         const SizedBox(height: 30),
-                        
+
                         // Alat details grid
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _detailItem("KATEGORI", alat['kategori']?['nama_kategori'] ?? '-'),
-                            _detailItem("STOK", "${alat['stok_alat'] ?? 0} Unit"),
+                            _detailItem(
+                              "KATEGORI",
+                              alat['kategori']?['nama_kategori'] ?? '-',
+                            ),
+                            _detailItem(
+                              "STOK",
+                              "${alat['stok_alat'] ?? 0} Unit",
+                            ),
                           ],
                         ),
                         const SizedBox(height: 20),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _detailItem("KONDISI", (alat['kondisi_alat'] ?? '').toUpperCase()),
-                            _detailItem("DIBUAT", alat['created_at']?.toString().split('T').first ?? '-'),
+                            _detailItem(
+                              "KONDISI",
+                              (alat['kondisi_alat'] ?? '').toUpperCase(),
+                            ),
+                            _detailItem(
+                              "DIBUAT",
+                              alat['created_at']?.toString().split('T').first ??
+                                  '-',
+                            ),
                           ],
                         ),
                         const SizedBox(height: 30),
-                        
+
                         // Description section
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("Deskripsi", 
-                                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+                              Text(
+                                "Deskripsi",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                               const SizedBox(height: 10),
                               Container(
+                                width: double.infinity,
                                 padding: const EdgeInsets.all(15),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF1F4F8),
@@ -100,13 +140,16 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
                                 ),
                                 child: Text(
                                   alat['deskripsi'] ?? '-',
-                                  style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        
+
                         const SizedBox(height: 30),
                         _actionButtons(),
                       ],
@@ -121,7 +164,7 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
       bottomNavigationBar: CustomNavbar(
         selectedIndex: 1,
         onItemTapped: (index) {
-          Navigator.pop(context); 
+          Navigator.pop(context);
         },
       ),
     );
@@ -131,20 +174,39 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
       decoration: BoxDecoration(
-          color: const Color(0xFFE8EEF5), 
-          borderRadius: BorderRadius.circular(10)),
-      child: Text(text, 
-          style: const TextStyle(color: Color(0xFF3B71B9), fontSize: 10, fontWeight: FontWeight.bold)),
+        color: const Color(0xFFE8EEF5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.poppins(
+          color: Color(0xFF3B71B9),
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 
   Widget _detailItem(String label, String value) {
     return Column(
       children: [
-        Text(label, 
-            style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
-        Text(value, 
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            color: Colors.grey,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+        ),
       ],
     );
   }
@@ -162,7 +224,9 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFF1F4F8),
               foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text("EDIT DATA"),
           ),
@@ -171,10 +235,11 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1), 
-              borderRadius: BorderRadius.circular(12)),
+            color: Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: const Icon(Icons.delete_outline, color: Colors.red),
-        )
+        ),
       ],
     );
   }

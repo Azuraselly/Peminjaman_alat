@@ -10,24 +10,23 @@ class AlatService {
   SupabaseClient get client => supabase;
 
   // 1. Fungsi Helper untuk Upload Gambar
-  Future<String?> _uploadGambar(dynamic imageSource) async {
+    Future<String?> _uploadGambar(dynamic imageSource) async {
     try {
-      // Buat nama file unik
       final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final String path = 'foto_alat/$fileName';
+      final String path = 'foto_alat/$fileName'; // folder di bucket
 
       if (kIsWeb && imageSource is Uint8List) {
-        // For web, upload bytes directly
-        await supabase.storage.from('inventory').uploadBinary(path, imageSource);
+        await supabase.storage.from('gambar').uploadBinary(path, imageSource);
       } else if (!kIsWeb && imageSource is File) {
-        // For mobile, upload file
-        await supabase.storage.from('inventory').upload(path, imageSource);
+        await supabase.storage.from('gambar').upload(path, imageSource);
       } else {
-        return null; // Unsupported type
+        return null;
       }
 
-      // Ambil Public URL
-      final String imageUrl = supabase.storage.from('inventory').getPublicUrl(path);
+      // Perbaikan: getPublicUrl langsung mengembalikan String
+      final String imageUrl = supabase.storage
+          .from('gambar')
+          .getPublicUrl(path);
       return imageUrl;
     } catch (e) {
       print("Error Upload Gambar: $e");

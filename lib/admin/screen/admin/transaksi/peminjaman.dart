@@ -4,6 +4,7 @@ import 'package:inventory_alat/admin/component/navbar.dart';
 import 'package:inventory_alat/admin/component/transaksi/peminjaman/add_peminjaman.dart';
 import 'package:inventory_alat/admin/component/transaksi/peminjaman/menu_item_card.dart';
 import 'package:inventory_alat/admin/component/header.dart';
+import 'package:inventory_alat/service/peminjaman.dart';
 
 class DataPeminjamanPage extends StatefulWidget {
   const DataPeminjamanPage({super.key});
@@ -118,48 +119,83 @@ class _DataPeminjamanPageState extends State<DataPeminjamanPage> {
                 const SizedBox(height: 20),
                 _buildSearchRow(),
                 const SizedBox(height: 25),
+                Expanded(
+                  child: FutureBuilder(
+                    future: PeminjamanService().getPeminjaman(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                // Contoh Data 1
-                MenuItemCard(
-                  name: "Azura",
-                  tool: "TANG",
-                  date: "2026-01-20",
-                  status: "dikembalikan",
-                  statusColor: Colors.green,
-                  onEdit: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) =>
-                          const BuatPeminjamanDialog(isEdit: true),
-                    );
-                  },
-                  onDelete: () {
-                    _confirmDelete(
-                      context as String,
-                      "Azura",
-                    ); // Panggil fungsi dialog hapus
-                  },
-                ),
-                // Contoh Data 2
-                MenuItemCard(
-                  name: "AULIA",
-                  tool: "TANG",
-                  date: "2026-01-18",
-                  status: "diajukan",
-                  statusColor: Colors.orange,
-                  onEdit: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) =>
-                          const BuatPeminjamanDialog(isEdit: true),
-                    );
-                  },
-                  onDelete: () {
-                    _confirmDelete(
-                      context as String,
-                      "Aulia",
-                    ); // Panggil fungsi dialog hapus
-                  },
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Center(
+                          child: Text("Belum ada data peminjaman"),
+                        );
+                      }
+
+                      final list = snapshot.data!;
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: list.length,
+                        itemBuilder: (context, i) {
+                          final item = list[i];
+
+                          return MenuItemCard(
+                            name: item['users']['username'],
+                            tool: item['alat']['nama_alat'],
+                            date: item['tanggal_pinjam'],
+                            status: item['status'],
+                            statusColor: item['status'] == 'dikembalikan'
+                                ? Colors.green
+                                : Colors.orange,
+
+                            onEdit: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => BuatPeminjamanDialog(
+                                  isEdit: true,
+                                  initialData: item, // WAJIB kirim item
+                                ),
+                              ).then(
+                                (_) => setState(() {}),
+                              ); // refresh otomatis
+                            },
+
+                            onDelete: () async {
+                              final confirm = await showDialog(
+                                context: context,
+                                builder: (_) => AlertDialog(
+                                  title: const Text("Hapus"),
+                                  content: const Text("Yakin hapus data ini?"),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: const Text("Batal"),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: const Text("Hapus"),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm == true) {
+                                await PeminjamanService().deletePeminjaman(
+                                  item['id_peminjaman'],
+                                );
+
+                                setState(() {}); // refresh list
+                              }
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
               ],
             ),

@@ -23,16 +23,17 @@ class _AddKategoriState extends State<AddKategori> {
     // Jika sedang edit, masukkan data lama
     if (widget.initialData != null) {
       _namaController.text = widget.initialData!['nama_kategori'] ?? '';
-      _deskripsiController.text = widget.initialData!['deskripsi_kategori'] ?? '';
+      _deskripsiController.text =
+          widget.initialData!['deskripsi_kategori'] ?? '';
     }
   }
 
   void _validateAndSave() {
     setState(() {
       // Validasi nama kategori
-      _namaError = _namaController.text.trim().isEmpty 
-        ? "Nama kategori tidak boleh kosong" 
-        : null;
+      _namaError = _namaController.text.trim().isEmpty
+          ? "Nama kategori tidak boleh kosong"
+          : null;
     });
 
     if (_namaError == null) {
@@ -40,7 +41,7 @@ class _AddKategoriState extends State<AddKategori> {
         "nama_kategori": _namaController.text.trim(),
         "deskripsi_kategori": _deskripsiController.text.trim(),
       };
-      
+
       Navigator.pop(context, result);
     }
   }
@@ -66,7 +67,9 @@ class _AddKategoriState extends State<AddKategori> {
                     icon: const Icon(Icons.arrow_back),
                   ),
                   Text(
-                    widget.initialData == null ? "Tambah Kategori" : "Edit Kategori",
+                    widget.initialData == null
+                        ? "Tambah Kategori"
+                        : "Edit Kategori",
                     style: GoogleFonts.poppins(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
@@ -85,7 +88,10 @@ class _AddKategoriState extends State<AddKategori> {
                 decoration: InputDecoration(
                   hintText: "Masukkan nama kategori",
                   errorText: _namaError,
-                  hintStyle: GoogleFonts.poppins(fontSize: 15, color: AppColors.abuh),
+                  hintStyle: GoogleFonts.poppins(
+                    fontSize: 15,
+                    color: AppColors.abuh,
+                  ),
                   filled: true,
                   fillColor: AppColors.form,
                   border: OutlineInputBorder(
@@ -103,7 +109,10 @@ class _AddKategoriState extends State<AddKategori> {
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: "Masukkan deskripsi (opsional)",
-                  hintStyle: GoogleFonts.poppins(fontSize: 15, color: AppColors.abuh),
+                  hintStyle: GoogleFonts.poppins(
+                    fontSize: 15,
+                    color: AppColors.abuh,
+                  ),
                   filled: true,
                   fillColor: AppColors.form,
                   border: OutlineInputBorder(

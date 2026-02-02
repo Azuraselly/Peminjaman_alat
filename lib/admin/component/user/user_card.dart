@@ -75,25 +75,20 @@ class UserCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _infoColumn("ROLE", role, Colors.black),
-              const SizedBox(width: 15),
+              const SizedBox(width: 8),
               _infoColumn(
                 "STATUS",
                 status,
                 isActive ? Colors.green : Colors.red,
               ),
-            ],
-          ),
-          if (role.toLowerCase() == 'peminjam')
-            Padding(
-              padding: const EdgeInsets.only(top: 15),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+              const SizedBox(width: 8),
+               if (role.toLowerCase() == 'peminjam')
                   _infoColumn("CLASS", className ?? '-', Colors.black),
                   const SizedBox(width: 15),
-                ],
-              ),
-            ),
+              
+            ],
+          ),
+         
          const Divider(height: 30),
           Row(
             children: [

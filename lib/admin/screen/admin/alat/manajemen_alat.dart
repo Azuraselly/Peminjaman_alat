@@ -34,14 +34,19 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
 
   void _setupRealtimeListeners() {
     // Listen for alat changes
-    _alatService.client.from('alat').stream(primaryKey: ['id_alat']).listen((_) {
+    _alatService.client.from('alat').stream(primaryKey: ['id_alat']).listen((
+      _,
+    ) {
       _loadAlat();
     });
-    
+
     // Listen for kategori changes
-    _kategoriService.client.from('kategori').stream(primaryKey: ['id_kategori']).listen((_) {
-      _loadKategori();
-    });
+    _kategoriService.client
+        .from('kategori')
+        .stream(primaryKey: ['id_kategori'])
+        .listen((_) {
+          _loadKategori();
+        });
   }
 
   Future<void> _loadAllData() async {
@@ -64,19 +69,22 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
           final kategoriData = e['kategori'];
           int categoryId = 0;
           String categoryName = '-';
-          
+
           if (kategoriData != null) {
             if (kategoriData is Map<String, dynamic>) {
-              categoryId = kategoriData['id_kategori'] is int 
-                  ? kategoriData['id_kategori'] 
-                  : int.tryParse(kategoriData['id_kategori']?.toString() ?? '0') ?? 0;
+              categoryId = kategoriData['id_kategori'] is int
+                  ? kategoriData['id_kategori']
+                  : int.tryParse(
+                          kategoriData['id_kategori']?.toString() ?? '0',
+                        ) ??
+                        0;
               categoryName = kategoriData['nama_kategori']?.toString() ?? '-';
             }
           }
-          
+
           return {
-            'id_alat': e['id_alat'] is int 
-                ? e['id_alat'] 
+            'id_alat': e['id_alat'] is int
+                ? e['id_alat']
                 : int.tryParse(e['id_alat']?.toString() ?? '0') ?? 0,
             'nama_alat': e['nama_alat']?.toString() ?? '',
             'kategori': {
@@ -84,8 +92,8 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
               'nama_kategori': categoryName,
             },
             'id_kategori': categoryId,
-            'stok_alat': e['stok_alat'] is int 
-                ? e['stok_alat'] 
+            'stok_alat': e['stok_alat'] is int
+                ? e['stok_alat']
                 : int.tryParse(e['stok_alat']?.toString() ?? '0') ?? 0,
             'kondisi_alat': e['kondisi_alat']?.toString() ?? '',
             'deskripsi': e['deskripsi']?.toString() ?? '',
@@ -126,7 +134,10 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
     try {
       final result = await _alatService.deleteAlat(_allAlat[index]['id_alat']);
       if (result['success'] == true) {
-        _showNotificationMessage("Berhasil menghapus ${_allAlat[index]['nama_alat']}", true);
+        _showNotificationMessage(
+          "Berhasil menghapus ${_allAlat[index]['nama_alat']}",
+          true,
+        );
         // Reload data to ensure UI is updated
         await _loadAlat();
       }
@@ -195,7 +206,9 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
                     onPressed: () {
                       Navigator.pop(context);
                       // Find the correct index of the item to delete
-                      int itemIndex = _allAlat.indexWhere((item) => item['nama_alat'] == name);
+                      int itemIndex = _allAlat.indexWhere(
+                        (item) => item['nama_alat'] == name,
+                      );
                       if (itemIndex != -1) {
                         _deleteAlat(itemIndex);
                       }
@@ -316,68 +329,73 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : _allAlat.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.inventory_2, size: 64, color: Colors.grey[400]),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Belum ada data alat',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 16,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Tekan tombol + untuk menambah alat baru',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.inventory_2,
+                              size: 64,
+                              color: Colors.grey[400],
                             ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 25),
-                            itemCount: _allAlat.length,
-                            itemBuilder: (context, index) {
-                    final item = _allAlat[index];
-                    return AlatCard(
-                      name: item['nama_alat'],
-                      kategoriName: item['kategori']?['nama_kategori'] ?? '-',
-                      stok: '${item['stok_alat']} Unit',
-                      kondisi: item['kondisi_alat'],
-                      imageUrl: item['gambar'],
-                      onDelete: () {
-                        _showDeleteConfirmation(item['nama_alat']);
-                      },
-                      onTapDetail: () {
-                        // Navigate to detail page
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DetailAlatPage(alatData: item),
-                          ),
-                        );
-                      },
-                      onEdit: () {
-                        // Open edit dialog
-                        showDialog(
-                          context: context,
-                          builder: (_) => AddAlat(
-                            initialData: item,
-                            onShowNotification: _showNotificationMessage,
-                          ),
-                        ).then((_) {
-                          _loadAlat();
-                        });
-                      },
-                    );
-                  },
-                ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Belum ada data alat',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Tekan tombol + untuk menambah alat baru',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 25),
+                        itemCount: _allAlat.length,
+                        itemBuilder: (context, index) {
+                          final item = _allAlat[index];
+                          return AlatCard(
+                            name: item['nama_alat'],
+                            kategoriName:
+                                item['kategori']?['nama_kategori'] ?? '-',
+                            stok: '${item['stok_alat']} Unit',
+                            kondisi: item['kondisi_alat'],
+                            imageUrl: item['gambar'],
+                            onDelete: () {
+                              _showDeleteConfirmation(item['nama_alat']);
+                            },
+                            onTapDetail: () {
+                              // Navigate to detail page
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      DetailAlatPage(alatData: item),
+                                ),
+                              );
+                            },
+                            onEdit: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => AddAlat(
+                                  initialData: item,
+                                  onShowNotification: _showNotificationMessage,
+                                ),
+                              ).then((_) {
+                                _loadAlat();
+                              });
+                            },
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -392,7 +410,7 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
                 child: Container(
                   padding: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
-                    color: _notifIsSuccess 
+                    color: _notifIsSuccess
                         ? const Color(0xFF3B71B9).withOpacity(0.9)
                         : Colors.red.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(15),
@@ -436,7 +454,7 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
         ],
       ),
       bottomNavigationBar: CustomNavbar(
-        selectedIndex: 1, 
+        selectedIndex: 1,
         onItemTapped: (index) {
           Navigator.pop(context); // Kembali ke navigasi utama
         },

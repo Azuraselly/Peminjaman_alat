@@ -42,15 +42,15 @@ class _BerandaPageState extends State<BerandaPage> {
         selectedIndex: _currentIndex,
         onItemTapped: (index) {
           setState(() {
-            _currentIndex = index; // Ganti halaman saat diklik
+            _currentIndex = index; 
           });
         },
       ),
       body: Column(
         children: [
-          const CustomHeader(), // Header tetap di atas (Fixed)
+          const CustomHeader(), 
           Expanded(
-            child: _buildBody(), // Isi konten berubah sesuai tombol navbar
+            child: _buildBody(), 
           ),
         ],
       ),

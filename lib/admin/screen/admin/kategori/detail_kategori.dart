@@ -27,7 +27,7 @@ class DetailKategoriPage extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(30),
                     decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 11, 6, 6),
+                      color:  Colors.white,
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: [
                         BoxShadow(
