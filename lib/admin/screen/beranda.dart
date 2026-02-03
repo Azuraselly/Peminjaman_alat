@@ -6,6 +6,7 @@ import 'package:inventory_alat/admin/component/header.dart';
 import 'package:inventory_alat/admin/screen/admin.dart';
 import 'package:inventory_alat/admin/screen/admin/transaksi/transaksi.dart';
 import 'package:inventory_alat/admin/screen/log_aktivitas.dart';
+import 'package:inventory_alat/service/peminjaman_service.dart'; // Import service
 import 'package:inventory_alat/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -18,7 +19,9 @@ class BerandaPage extends StatefulWidget {
 
 class _BerandaPageState extends State<BerandaPage> {
   int _currentIndex = 0;
+  final PeminjamanService _peminjamanService = PeminjamanService();
 
+  // Fungsi untuk menentukan halaman mana yang tampil berdasarkan index navbar
   Widget _buildBody() {
     switch (_currentIndex) {
       case 0:
@@ -42,15 +45,18 @@ class _BerandaPageState extends State<BerandaPage> {
         selectedIndex: _currentIndex,
         onItemTapped: (index) {
           setState(() {
-            _currentIndex = index; 
+            _currentIndex = index;
           });
         },
       ),
       body: Column(
         children: [
-          const CustomHeader(), 
+          const CustomHeader(),
           Expanded(
-            child: _buildBody(), 
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: _buildBody(),
+            ),
           ),
         ],
       ),
@@ -58,64 +64,83 @@ class _BerandaPageState extends State<BerandaPage> {
   }
 
   Widget _buildMainContent() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 25),
-          Row(
-            children: [
-              Icon(Icons.grid_view_rounded, color: AppColors.selly, size: 28),
-              const SizedBox(width: 10),
-              Text(
-                "Sistem",
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
+    return RefreshIndicator(
+      onRefresh: () async {
+        setState(() {}); // Memicu rebuild FutureBuilder saat ditarik
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 25),
+            Row(
+              children: [
+                Icon(Icons.grid_view_rounded, color: AppColors.selly, size: 28),
+                const SizedBox(width: 10),
+                Text(
+                  "Sistem",
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            childAspectRatio: 1.4,
-            mainAxisSpacing: 15,
-            crossAxisSpacing: 15,
-            children: const [
-              StatCard(
-                title: "USER",
-                value: "110",
-                icon: Icons.people_alt_rounded,
-                color: Color(0xFF4C73B3),
-              ),
-              StatCard(
-                title: "ALAT",
-                value: "95",
-                icon: Icons.build_rounded,
-                color: Color(0xFF8B6DF0),
-              ),
-              StatCard(
-                title: "TRANSAKSI",
-                value: "360",
-                icon: Icons.swap_horiz_rounded,
-                color: Colors.orange,
-              ),
-              StatCard(
-                title: "KATEGORI",
-                value: "9",
-                icon: Icons.local_offer,
-                color: Color(0xFF27AE60),
-              ),
-            ],
-          ),
-          const SizedBox(height: 25),
-          const ActivityCard(),
-          const SizedBox(height: 30),
-        ],
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // FUTURE BUILDER UNTUK DATA RIIL
+            FutureBuilder<Map<String, int>>(
+              future: _peminjamanService.getDashboardStats(),
+              builder: (context, snapshot) {
+                // Default data saat loading atau error
+                final stats = snapshot.data ?? {
+                  'users': 0, 'alat': 0, 'transaksi': 0, 'kategori': 0
+                };
+                final bool isLoading = snapshot.connectionState == ConnectionState.waiting;
+
+                return GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.4,
+                  mainAxisSpacing: 15,
+                  crossAxisSpacing: 15,
+                  children: [
+                    StatCard(
+                      title: "USER",
+                      value: isLoading ? "..." : stats['users'].toString(),
+                      icon: Icons.people_alt_rounded,
+                      color: const Color(0xFF4C73B3),
+                    ),
+                    StatCard(
+                      title: "ALAT",
+                      value: isLoading ? "..." : stats['alat'].toString(),
+                      icon: Icons.build_rounded,
+                      color: const Color(0xFF8B6DF0),
+                    ),
+                    StatCard(
+                      title: "TRANSAKSI",
+                      value: isLoading ? "..." : stats['transaksi'].toString(),
+                      icon: Icons.swap_horiz_rounded,
+                      color: Colors.orange,
+                    ),
+                    StatCard(
+                      title: "KATEGORI",
+                      value: isLoading ? "..." : stats['kategori'].toString(),
+                      icon: Icons.local_offer,
+                      color: const Color(0xFF27AE60),
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 25),
+            const ActivityCard(), // Menampilkan log_aktifitas
+            const SizedBox(height: 30),
+          ],
+        ),
       ),
     );
   }

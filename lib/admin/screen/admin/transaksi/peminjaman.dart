@@ -4,7 +4,7 @@ import 'package:inventory_alat/admin/component/navbar.dart';
 import 'package:inventory_alat/admin/component/transaksi/peminjaman/add_peminjaman.dart';
 import 'package:inventory_alat/admin/component/transaksi/peminjaman/menu_item_card.dart';
 import 'package:inventory_alat/admin/component/header.dart';
-import 'package:inventory_alat/service/peminjaman.dart';
+import 'package:inventory_alat/service/peminjaman_service.dart';
 
 class DataPeminjamanPage extends StatefulWidget {
   const DataPeminjamanPage({super.key});
@@ -14,10 +14,25 @@ class DataPeminjamanPage extends StatefulWidget {
 }
 
 class _DataPeminjamanPageState extends State<DataPeminjamanPage> {
-  // Simulasi Nama Admin dari Login
-  final String currentAdmin = "Admin Kece";
+  String currentAdmin = "Admin";
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
 
-  // Fungsi Menampilkan Notifikasi Melayang (Overlay)
+  @override
+  void initState() {
+    super.initState();
+    _loadAdminData();
+  }
+
+  Future<void> _loadAdminData() async {
+    final profile = await PeminjamanService().getUserProfile();
+    if (profile != null && mounted) {
+      setState(() {
+        currentAdmin = profile['username'] ?? "Admin";
+      });
+    }
+  }
+
   void _showTopNotif(String message) {
     OverlayState? overlayState = Overlay.of(context);
     late OverlayEntry overlayEntry;
@@ -47,7 +62,7 @@ class _DataPeminjamanPageState extends State<DataPeminjamanPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      currentAdmin,
+                      currentAdmin, // Sekarang otomatis berubah
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -110,94 +125,79 @@ class _DataPeminjamanPageState extends State<DataPeminjamanPage> {
       body: Column(
         children: [
           const CustomHeader(),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
               children: [
                 const SizedBox(height: 20),
                 _buildTitleRow(context),
                 const SizedBox(height: 20),
                 _buildSearchRow(),
-                const SizedBox(height: 25),
-                Expanded(
-                  child: FutureBuilder(
-                    future: PeminjamanService().getPeminjaman(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const Center(
-                          child: Text("Belum ada data peminjaman"),
-                        );
-                      }
-
-                      final list = snapshot.data!;
-
-                      return ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: list.length,
-                        itemBuilder: (context, i) {
-                          final item = list[i];
-
-                          return MenuItemCard(
-                            name: item['users']['username'],
-                            tool: item['alat']['nama_alat'],
-                            date: item['tanggal_pinjam'],
-                            status: item['status'],
-                            statusColor: item['status'] == 'dikembalikan'
-                                ? Colors.green
-                                : Colors.orange,
-
-                            onEdit: () {
-                              showDialog(
-                                context: context,
-                                builder: (_) => BuatPeminjamanDialog(
-                                  isEdit: true,
-                                  initialData: item, // WAJIB kirim item
-                                ),
-                              ).then(
-                                (_) => setState(() {}),
-                              ); // refresh otomatis
-                            },
-
-                            onDelete: () async {
-                              final confirm = await showDialog(
-                                context: context,
-                                builder: (_) => AlertDialog(
-                                  title: const Text("Hapus"),
-                                  content: const Text("Yakin hapus data ini?"),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, false),
-                                      child: const Text("Batal"),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, true),
-                                      child: const Text("Hapus"),
-                                    ),
-                                  ],
-                                ),
-                              );
-
-                              if (confirm == true) {
-                                await PeminjamanService().deletePeminjaman(
-                                  item['id_peminjaman'],
-                                );
-
-                                setState(() {}); // refresh list
-                              }
-                            },
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
+                const SizedBox(height: 20),
               ],
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: PeminjamanService().getPeminjaman(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text("Belum ada data peminjaman"));
+                }
+
+                // Logika Filter Pencarian Sederhana
+                final list = snapshot.data!.where((item) {
+                  final name = item['users']['username']
+                      .toString()
+                      .toLowerCase();
+                  return name.contains(_searchQuery.toLowerCase());
+                }).toList();
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: list.length,
+                  itemBuilder: (context, i) {
+                    final item = list[i];
+
+                    return MenuItemCard(
+                      // Sesuai dengan struktur query di Service (item['users']['username'])
+                      name: item['users'] != null
+                          ? item['users']['username']
+                          : "Unknown",
+                      tool: item['alat'] != null
+                          ? item['alat']['nama_alat']
+                          : "Alat Dihapus",
+                      date: item['tanggal_pinjam'] ?? "-",
+                      status: item['status'] ?? "pending",
+                      statusColor: item['status'] == 'dikembalikan'
+                          ? Colors.green
+                          : Colors.orange,
+                      fullData: item,
+                      onEdit: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => BuatPeminjamanDialog(
+                            isEdit: true,
+                            initialData: item, // item adalah Map dari database
+                          ),
+                        ).then((value) {
+                          if (value == true) setState(() {});
+                        });
+                      },
+                      onDelete: () async {
+                        _confirmDeleteAction(
+                          item['id_peminjaman'],
+                          item['users']['username'],
+                        );
+                      },
+                    );
+                  },
+                );
+              },
             ),
           ),
         ],
@@ -207,6 +207,33 @@ class _DataPeminjamanPageState extends State<DataPeminjamanPage> {
         onItemTapped: (i) => Navigator.pop(context),
       ),
     );
+  }
+
+  void _confirmDeleteAction(int id, String name) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Hapus Data"),
+        content: Text("Yakin ingin menghapus data $name?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Hapus", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await PeminjamanService().deletePeminjaman(id);
+      _showTopNotif("Berhasil menghapus data $name");
+      setState(() {});
+    }
   }
 
   void _openEditDialog(String name) {
@@ -246,7 +273,10 @@ class _DataPeminjamanPageState extends State<DataPeminjamanPage> {
             showDialog(
               context: context,
               builder: (context) => const BuatPeminjamanDialog(isEdit: false),
-            );
+            ).then((value) {
+              // REFRESH DI SINI
+              setState(() {});
+            });
           },
         ),
       ],
@@ -258,8 +288,11 @@ class _DataPeminjamanPageState extends State<DataPeminjamanPage> {
       children: [
         Expanded(
           child: TextField(
+            controller: _searchController,
+            onChanged: (val) =>
+                setState(() => _searchQuery = val), // Trigger refresh list
             decoration: InputDecoration(
-              hintText: "Cari...",
+              hintText: "Cari nama peminjam...",
               prefixIcon: const Icon(Icons.search, color: Colors.grey),
               filled: true,
               fillColor: Colors.white,
@@ -270,35 +303,28 @@ class _DataPeminjamanPageState extends State<DataPeminjamanPage> {
             ),
           ),
         ),
-        const SizedBox(width: 10),
-        _iconButton(
-          Icons.filter_list_alt,
-          Colors.white,
-          Colors.grey,
-          border: true,
-        ),
       ],
     );
   }
+}
 
-  Widget _iconButton(
-    IconData icon,
-    Color bg,
-    Color iconColor, {
-    bool border = false,
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(12),
-          border: border ? Border.all(color: Colors.grey.shade200) : null,
-        ),
-        child: Icon(icon, color: iconColor, size: 24),
+Widget _iconButton(
+  IconData icon,
+  Color bg,
+  Color iconColor, {
+  bool border = false,
+  VoidCallback? onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: border ? Border.all(color: Colors.grey.shade200) : null,
       ),
-    );
-  }
+      child: Icon(icon, color: iconColor, size: 24),
+    ),
+  );
 }

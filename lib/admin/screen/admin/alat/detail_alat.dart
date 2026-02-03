@@ -58,22 +58,8 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
                     ),
                     child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 45,
-                          backgroundColor: const Color(0xFFE8EEF5),
-                          child: Text(
-                            (alat['nama_alat'] ?? '?').length >= 2
-                                ? alat['nama_alat']
-                                      .substring(0, 2)
-                                      .toUpperCase()
-                                : (alat['nama_alat'] ?? '?')[0].toUpperCase(),
-                            style: GoogleFonts.poppins(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF3B71B9),
-                            ),
-                          ),
-                        ),
+                        // DIPERBAIKI: CircleAvatar dengan gambar dari Supabase
+                        _buildCircleAvatar(alat),
                         const SizedBox(height: 20),
                         Text(
                           alat['nama_alat'] ?? 'Unknown Alat',
@@ -132,7 +118,6 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
                               ),
                               const SizedBox(height: 10),
                               Container(
-                                width: double.infinity,
                                 padding: const EdgeInsets.all(15),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF1F4F8),
@@ -170,6 +155,33 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
     );
   }
 
+  Widget _buildCircleAvatar(Map<String, dynamic> data) {
+    final String? imgUrl = data['gambar']?.toString();
+
+    return Container(
+      width: 100,
+      height: 100,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0xFFE8EEF5),
+        border: Border.all(color: const Color(0xFF3B71B9), width: 3),
+      ),
+      child: ClipOval(
+        child: imgUrl != null && imgUrl.isNotEmpty
+            ? Image.network(
+                imgUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.image_not_supported,
+                  size: 40,
+                  color: Colors.grey,
+                ),
+              )
+            : const Icon(Icons.inventory_2, size: 40, color: Colors.grey),
+      ),
+    );
+  }
+
   Widget _buildTag(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
@@ -179,7 +191,7 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
       ),
       child: Text(
         text,
-        style: GoogleFonts.poppins(
+        style: const TextStyle(
           color: Color(0xFF3B71B9),
           fontSize: 10,
           fontWeight: FontWeight.bold,
@@ -193,7 +205,7 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: const TextStyle(
             fontSize: 10,
             color: Colors.grey,
             fontWeight: FontWeight.bold,
@@ -201,7 +213,7 @@ class _DetailAlatPageState extends State<DetailAlatPage> {
         ),
         Text(
           value,
-          style: GoogleFonts.poppins(
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
             color: Colors.black,

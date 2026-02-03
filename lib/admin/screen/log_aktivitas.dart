@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:inventory_alat/admin/models/log_aktivitas.dart';
+
+import 'package:inventory_alat/service/peminjaman_service.dart'; 
 
 class RiwayatPage extends StatefulWidget {
   const RiwayatPage({super.key});
@@ -10,92 +12,115 @@ class RiwayatPage extends StatefulWidget {
 }
 
 class _RiwayatPageState extends State<RiwayatPage> {
-  final supabase = Supabase.instance.client;
-  List<Map<String, dynamic>> _logs = [];
-  bool _isLoading = true;
+  final PeminjamanService _service = PeminjamanService();
+  List<LogAktivitas> logList = [];
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadLogs();
+    _loadLogData();
   }
 
-  Future<void> _loadLogs() async {
-    try {
-      final res = await supabase
-          .from('log_aktivitas') // ganti dengan nama tabel log kamu
-          .select('id, admin_name, activity, created_at')
-          .order('created_at', ascending: false);
-
+  Future<void> _loadLogData() async {
+  if (!mounted) return; // Tambahkan ini
+  setState(() => isLoading = true);
+  
+  try {
+    final data = await _service.getLogs();
+    
+    if (mounted) { // Tambahkan ini
       setState(() {
-        _logs = List<Map<String, dynamic>>.from(res);
-        _isLoading = false;
+        logList = data;
+        isLoading = false;
       });
-    } catch (e) {
-      print('Error fetching logs: $e');
-      setState(() => _isLoading = false);
     }
+  } catch (e) {
+    if (mounted) setState(() => isLoading = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      body: Column(
-        children: [
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              "Log Aktivitas",
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Colors.black,
+      body: RefreshIndicator(
+        onRefresh: _loadLogData,
+        child: CustomScrollView( // Menggunakan CustomScrollView agar RefreshIndicator berfungsi maksimal
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Log Aktivitas",
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black,
+                      ),
+                    ),
+                    if (!isLoading)
+                      Text(
+                        "${logList.length} aktivitas",
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _logs.isEmpty
-                    ? Center(
-                        child: Text(
-                          "Belum ada aktivitas",
-                          style: GoogleFonts.poppins(
-                            color: Colors.grey,
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: _logs.length,
-                        itemBuilder: (context, index) {
-                          final log = _logs[index];
-                          final createdAt = DateTime.tryParse(log['created_at'] ?? '') ?? DateTime.now();
-                          final timeAgo = _timeAgo(createdAt);
-                          return _buildLogCard(
-                            log['admin_name'] ?? "Admin",
-                            log['activity'] ?? "",
-                            timeAgo,
-                          );
-                        },
-                      ),
-          ),
-        ],
+            if (isLoading)
+              const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (logList.isEmpty)
+              SliverFillRemaining(
+                child: _buildEmptyState(),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _buildLogCard(logList[index]),
+                    childCount: logList.length,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildLogCard(String adminName, String activity, String time) {
+  Widget _buildEmptyState() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.history, size: 64, color: Colors.grey.shade300),
+        const SizedBox(height: 16),
+        Text(
+          "Belum ada aktivitas",
+          style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLogCard(LogAktivitas log) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -110,15 +135,26 @@ class _RiwayatPageState extends State<RiwayatPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                adminName,
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+              Expanded(
+                child: Row(
+                  children: [
+                    _buildRoleBadge(log.user?.role),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        log.user?.username ?? 'System',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Text(
-                time,
+                log.getTimeAgo(),
                 style: GoogleFonts.poppins(
                   fontSize: 10,
                   color: Colors.grey,
@@ -127,12 +163,13 @@ class _RiwayatPageState extends State<RiwayatPage> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
-            activity,
+            log.aksi,
             style: GoogleFonts.poppins(
               fontSize: 12,
-              color: Colors.grey.shade600,
+              color: Colors.grey.shade700,
+              height: 1.5,
             ),
           ),
         ],
@@ -140,13 +177,36 @@ class _RiwayatPageState extends State<RiwayatPage> {
     );
   }
 
-  String _timeAgo(DateTime dateTime) {
-    final diff = DateTime.now().difference(dateTime);
+  Widget _buildRoleBadge(UserRole? role) {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: _getRoleColor(role).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        _getRoleIcon(role),
+        size: 14,
+        color: _getRoleColor(role),
+      ),
+    );
+  }
 
-    if (diff.inSeconds < 60) return "Baru saja";
-    if (diff.inMinutes < 60) return "${diff.inMinutes} menit lalu";
-    if (diff.inHours < 24) return "${diff.inHours} jam lalu";
-    if (diff.inDays < 7) return "${diff.inDays} hari lalu";
-    return "${dateTime.day}/${dateTime.month}/${dateTime.year}";
+  Color _getRoleColor(UserRole? role) {
+    switch (role) {
+      case UserRole.admin: return Colors.redAccent;
+      case UserRole.petugas: return Colors.blueAccent;
+      case UserRole.peminjam: return Colors.greenAccent;
+      default: return Colors.grey;
+    }
+  }
+
+  IconData _getRoleIcon(UserRole? role) {
+    switch (role) {
+      case UserRole.admin: return Icons.admin_panel_settings;
+      case UserRole.petugas: return Icons.engineering;
+      case UserRole.peminjam: return Icons.person;
+      default: return Icons.info_outline;
+    }
   }
 }

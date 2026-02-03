@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-Widget buildHeaderPetugas(String title) {
+Widget buildHeaderPetugas(String? userName) { // Tambahkan parameter userName
   return Container(
     padding: const EdgeInsets.fromLTRB(20, 60, 20, 30),
     decoration: const BoxDecoration(
@@ -15,13 +15,24 @@ Widget buildHeaderPetugas(String title) {
       children: [
         Row(
           children: [
-            const CircleAvatar(radius: 25, backgroundImage: NetworkImage('https://via.placeholder.com/150')),
+            const CircleAvatar(
+              radius: 25, 
+              backgroundImage: NetworkImage('https://via.placeholder.com/150')
+            ),
             const SizedBox(width: 15),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Selamat Pagi,", style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12)),
-                Text("Azura Aulia", style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                Text("Selamat Pagi,", 
+                  style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12)),
+                Text(
+                  userName ?? "Petugas", 
+                  style: GoogleFonts.poppins(
+                    color: Colors.white, 
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 18
+                  )
+                ),
               ],
             ),
             const Spacer(),

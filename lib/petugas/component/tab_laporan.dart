@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:inventory_alat/petugas/component/header.dart';
 
 class TabLaporan extends StatelessWidget {
-  const TabLaporan({super.key});
+  const TabLaporan({super.key, required String userName});
 
   @override
   Widget build(BuildContext context) {

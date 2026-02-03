@@ -3,18 +3,31 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:inventory_alat/admin/component/header.dart';
 import 'package:inventory_alat/admin/component/navbar.dart';
 import 'package:inventory_alat/admin/component/transaksi/peminjaman/add_peminjaman.dart';
+import 'package:inventory_alat/service/peminjaman_service.dart'; // Pastikan path benar
 
 class DetailPeminjamanPage extends StatelessWidget {
-  const DetailPeminjamanPage({super.key});
+  final Map<String, dynamic> data;
+
+  const DetailPeminjamanPage({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
+    // Parsing data dari database
+    final int id = data['id_peminjaman'] ?? 0;
+    final String username = data['users']?['username'] ?? 'User';
+    final String toolName = data['alat']?['nama_alat'] ?? 'Alat';
+    final String kelas = data['tingkatan_kelas'] ?? '-';
+    final String status = data['status'] ?? 'diajukan';
+    final String tglPinjam = data['tanggal_pinjam'] ?? '-';
+    final String tglKembali = data['batas_pengembalian'] ?? '-';
+    final int jumlah = data['jumlah'] ?? 0;
+    final int idAlat = data['id_alat'] ?? 0;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: Column(
         children: [
           const CustomHeader(),
-          
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -56,56 +69,49 @@ class DetailPeminjamanPage extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text("ID TRANSAKSI", style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
-                                Text("#102", style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w900)),
+                                Text("#$id", style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w900)),
                               ],
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(color: const Color(0xFFDDE7F2), borderRadius: BorderRadius.circular(20)),
-                              child: Text("DISETUJUI", style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF3B6790))),
-                            )
+                            _buildStatusBadge(status),
                           ],
                         ),
                         const SizedBox(height: 20),
                         
-                        _buildInfoTile(Icons.person_outline, "Azura", "XI TKR 1"),
+                        _buildInfoTile(Icons.person_outline, username, kelas),
                         const SizedBox(height: 12),
-                        _buildInfoTile(Icons.handyman_outlined, "Dongkrak", "JML: 1     ID ALAT: 3"),
+                        _buildInfoTile(Icons.handyman_outlined, toolName, "JML: $jumlah    ID ALAT: $idAlat"),
                         
                         const SizedBox(height: 25),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildDateInfo("TGL PINJAM", "2026-01-18", Colors.black),
-                            _buildDateInfo("BATAS KEMBALI", "2026-01-19", Colors.red),
+                            _buildDateInfo("TGL PINJAM", tglPinjam, Colors.black),
+                            _buildDateInfo("BATAS KEMBALI", tglKembali, Colors.red),
                           ],
                         ),
                         const Divider(height: 40),
                         
                         Text("DISETUJUI OLEH", style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 5),
-                        Text("Admin ID: 1", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14)),
-                        Text("2026-01-18 08:30", style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey)),
+                        // Menampilkan nama admin/petugas yang menyetujui jika ada
+                        Text(data['disetujui_oleh_name'] ?? "Menunggu Persetujuan", 
+                            style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text(data['waktu_setujui'] ?? "-", style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey)),
                         
                         const SizedBox(height: 25),
                         Row(
                           children: [
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: () {
-                                  // POP-UP EDIT DATA
-                                  showDialog(
+                                onPressed: () async {
+                                  final result = await showDialog(
                                     context: context,
-                                    builder: (context) => const BuatPeminjamanDialog(
+                                    builder: (context) => BuatPeminjamanDialog(
                                       isEdit: true,
-                                      initialData: {
-                                        'name': 'Azura',
-                                        'tool': 'Dongkrak',
-                                        'kelas': 'XI TKR 1',
-                                        'date': '2026-01-18',
-                                      },
+                                      initialData: data,
                                     ),
                                   );
+                                  if (result == true) Navigator.pop(context, true);
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFEEEEEE),
@@ -117,10 +123,13 @@ class DetailPeminjamanPage extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 10),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(color: const Color(0xFFFFDADA), borderRadius: BorderRadius.circular(12)),
-                              child: const Icon(Icons.delete_outline, color: Colors.red),
+                            GestureDetector(
+                              onTap: () => _confirmDelete(context, id),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(color: const Color(0xFFFFDADA), borderRadius: BorderRadius.circular(12)),
+                                child: const Icon(Icons.delete_outline, color: Colors.red),
+                              ),
                             )
                           ],
                         )
@@ -133,13 +142,44 @@ class DetailPeminjamanPage extends StatelessWidget {
           ),
         ],
       ),
-      bottomNavigationBar: CustomNavbar(
-        selectedIndex: 2, // Highlight pada menu Transaksi
-        onItemTapped: (index) {
-          Navigator.pop(context); // Kembali ke navigasi utama
-        },
+    );
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color color;
+    switch (status) {
+      case 'disetujui': color = Colors.blue; break;
+      case 'ditolak': color = Colors.red; break;
+      case 'dikembalikan': color = Colors.green; break;
+      default: color = Colors.orange; // diajukan
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+      child: Text(status.toUpperCase(), 
+          style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
+    );
+  }
+
+  // Fungsi hapus data
+  void _confirmDelete(BuildContext context, int id) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Hapus Data"),
+        content: const Text("Yakin ingin menghapus transaksi ini?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Batal")),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Hapus", style: TextStyle(color: Colors.red))),
+        ],
       ),
     );
+
+    if (confirm == true) {
+      await PeminjamanService().deletePeminjaman(id);
+      Navigator.pop(context, true); // Kembali ke list dan refresh
+    }
   }
 
   Widget _buildInfoTile(IconData icon, String title, String subtitle) {

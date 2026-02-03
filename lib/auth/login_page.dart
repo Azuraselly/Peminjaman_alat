@@ -73,7 +73,7 @@ class _LoginPageState extends State<LoginPage> {
         case 'petugas':
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const PetugasMainScreen()),
+            MaterialPageRoute(builder: (_) =>  HomePagePetugas()),
           );
           break;
 

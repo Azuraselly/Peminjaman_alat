@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:inventory_alat/peminjam/models/data.dart';
+import 'package:inventory_alat/peminjam/models/peminjam_models.dart';
 import 'package:inventory_alat/peminjam/screen/beranda.dart';
 import 'package:inventory_alat/peminjam/screen/cari.dart';
-import 'package:inventory_alat/peminjam/screen/checkout.dart';
 import 'package:inventory_alat/peminjam/screen/profil.dart';
 import 'package:inventory_alat/peminjam/screen/riwayat.dart';
 
@@ -17,51 +16,99 @@ class MainNavigationPeminjam extends StatefulWidget {
 class _MainNavigationPeminjamState extends State<MainNavigationPeminjam> {
   int _currentIndex = 0;
 
-  // Global State untuk data
-  List<Alat> daftarAlat = [
-    Alat(id: 1, nama: "Kunci Pas", kategori: "Kunci", stok: 10),
-    Alat(id: 2, nama: "Obeng Set", kategori: "Kunci", stok: 15),
-    Alat(id: 3, nama: "Multimeter", kategori: "Elektrik", stok: 5),
-    Alat(id: 4, nama: "Kunci Inggris", kategori: "Kunci", stok: 7),
-    Alat(id: 5, nama: "Tang Kombinasi", kategori: "Umum", stok: 12),
-    Alat(id: 6, nama: "Bor Tangan", kategori: "Mesin", stok: 3),
-  ];
+  // Global State untuk keranjang
+  final List<KeranjangItem> _keranjang = [];
 
-  List<Alat> keranjang = [];
-  List<Map<String, dynamic>> riwayat = [
-    {"nama": "Scanner OBD II", "tgl": "22 Jan 2026", "status": "Kembali"},
-  ];
+  // Add item to cart
+  void _addToKeranjang(Alat alat) {
+    setState(() {
+      // Check if item already in cart
+      final existingIndex = _keranjang.indexWhere(
+        (item) => item.alat.idAlat == alat.idAlat,
+      );
+
+      if (existingIndex >= 0) {
+        // Item exists, increase quantity if possible
+        if (_keranjang[existingIndex].canIncrease) {
+          _keranjang[existingIndex].jumlah++;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${alat.namaAlat} ditambahkan (${_keranjang[existingIndex].jumlah} unit)'),
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Stok ${alat.namaAlat} tidak mencukupi'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } else {
+        // Add new item
+        _keranjang.add(KeranjangItem(alat: alat, jumlah: 1));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${alat.namaAlat} ditambahkan ke keranjang!'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+    });
+  }
+
+  // Remove item from cart
+  void _removeFromKeranjang(int index) {
+    setState(() {
+      _keranjang.removeAt(index);
+    });
+  }
+
+  // Update item quantity
+  void _updateQuantity(int index, int newQuantity) {
+    setState(() {
+      if (newQuantity > 0 && newQuantity <= _keranjang[index].maxJumlah) {
+        _keranjang[index].jumlah = newQuantity;
+      }
+    });
+  }
+
+  // Clear cart after checkout
+  void _clearKeranjang() {
+    setState(() {
+      _keranjang.clear();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Latar belakang abu-abu terang
+      backgroundColor: const Color(0xFFF8F9FA),
+      
       // 1. TOMBOL CHECKOUT MELAYANG DI TENGAH
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Aksi ketika tombol bulat tengah diklik
-          if (_currentIndex != 1 && keranjang.isNotEmpty) {
-            setState(() => _currentIndex = 1); // Pindah ke halaman keranjang
+          if (_keranjang.isNotEmpty) {
+            // Navigate to keranjang page
+            setState(() => _currentIndex = 1);
+          } else {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text("Ayo selesaikan peminjamanmu!"),
-                duration: Duration(seconds: 1),
+                content: Text("Keranjangmu masih kosong."),
+                duration: Duration(seconds: 2),
               ),
-            );
-          } else if (keranjang.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Keranjangmu masih kosong.")),
             );
           }
         },
         backgroundColor: const Color(0xFF1A314D),
-        shape: const CircleBorder(), // Membuatnya bulat sempurna
-        elevation: 8, // Sedikit efek bayangan
+        shape: const CircleBorder(),
+        elevation: 8,
         child: Stack(
           alignment: Alignment.center,
           children: [
-            const Icon(Icons.add_shopping_cart_rounded, color: Colors.white),
-            if (keranjang.isNotEmpty)
+            const Icon(Icons.shopping_cart_rounded, color: Colors.white),
+            if (_keranjang.isNotEmpty)
               Positioned(
                 right: 0,
                 top: 0,
@@ -73,7 +120,7 @@ class _MainNavigationPeminjamState extends State<MainNavigationPeminjam> {
                     border: Border.all(color: Colors.white, width: 1),
                   ),
                   child: Text(
-                    keranjang.length.toString(),
+                    _keranjang.length.toString(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 9,
@@ -91,11 +138,10 @@ class _MainNavigationPeminjamState extends State<MainNavigationPeminjam> {
 
       // 3. CUSTOM NAVBAR DENGAN LUBANG (NOTCH)
       bottomNavigationBar: BottomAppBar(
-        shape:
-            const CircularNotchedRectangle(), // Membuat lubang untuk tombol melayang
-        notchMargin: 8.0, // Jarak lubang dari tepi
-        clipBehavior: Clip.antiAlias, // Memastikan bentuk potongan rapi
-        elevation: 8, // Bayangan di navbar
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        clipBehavior: Clip.antiAlias,
+        elevation: 8,
         color: Colors.white,
         child: SizedBox(
           height: 60,
@@ -104,13 +150,10 @@ class _MainNavigationPeminjamState extends State<MainNavigationPeminjam> {
             children: [
               // Sisi Kiri
               _buildNavItem(Icons.home_filled, "Beranda", 0),
-              _buildNavItem(
-                Icons.shopping_bag_rounded,
-                "Pinjam",
-                1,
-              ), // Mengganti keranjang dengan Pinjam
+              _buildNavItem(Icons.search, "Cari", 1),
 
               const SizedBox(width: 40), // Ruang kosong untuk tombol tengah
+              
               // Sisi Kanan
               _buildNavItem(Icons.history_rounded, "Riwayat", 2),
               _buildNavItem(Icons.person, "Profil", 3),
@@ -129,9 +172,9 @@ class _MainNavigationPeminjamState extends State<MainNavigationPeminjam> {
     bool isActive = _currentIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
-      behavior: HitTestBehavior.opaque, // Agar seluruh area bisa diklik
+      behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: MediaQuery.of(context).size.width / 5, // Mengatur lebar agar pas
+        width: MediaQuery.of(context).size.width / 5,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -159,18 +202,17 @@ class _MainNavigationPeminjamState extends State<MainNavigationPeminjam> {
   Widget _buildPageContent() {
     switch (_currentIndex) {
       case 0:
-        return BerandaContent(
-          daftarAlat: daftarAlat,
-          onAddKeranjang: (alat) => setState(() => keranjang.add(alat)),
-          onAdd: (alat) {},
+        return BerandaPeminjam(
+          onAddToCart: _addToKeranjang,
         );
       case 1:
-        return CariPage();
-
+        return CariPeminjam(
+          onAddToCart: _addToKeranjang,
+        );
       case 2:
-        return RiwayatPage(dataRiwayat: riwayat);
+        return const RiwayatPeminjam();
       case 3:
-        return const ProfilPeminjamPage();
+        return const ProfilPeminjam();
       default:
         return Container();
     }
