@@ -19,6 +19,7 @@ class BerandaPage extends StatefulWidget {
 
 class _BerandaPageState extends State<BerandaPage> {
   int _currentIndex = 0;
+  int countToday = 0;
   final PeminjamanService _peminjamanService = PeminjamanService();
 
   // Fungsi untuk menentukan halaman mana yang tampil berdasarkan index navbar
@@ -89,16 +90,17 @@ class _BerandaPageState extends State<BerandaPage> {
               ],
             ),
             const SizedBox(height: 20),
-            
+
             // FUTURE BUILDER UNTUK DATA RIIL
             FutureBuilder<Map<String, int>>(
               future: _peminjamanService.getDashboardStats(),
               builder: (context, snapshot) {
                 // Default data saat loading atau error
-                final stats = snapshot.data ?? {
-                  'users': 0, 'alat': 0, 'transaksi': 0, 'kategori': 0
-                };
-                final bool isLoading = snapshot.connectionState == ConnectionState.waiting;
+                final stats =
+                    snapshot.data ??
+                    {'users': 0, 'alat': 0, 'transaksi': 0, 'kategori': 0};
+                final bool isLoading =
+                    snapshot.connectionState == ConnectionState.waiting;
 
                 return GridView.count(
                   shrinkWrap: true,
@@ -137,7 +139,13 @@ class _BerandaPageState extends State<BerandaPage> {
               },
             ),
             const SizedBox(height: 25),
-            const ActivityCard(), // Menampilkan log_aktifitas
+            ActivityCard(
+              totalPeminjamanHariIni: countToday,
+              onTapCekLaporan: () {
+                // Navigasi ke halaman riwayat atau laporan
+                Navigator.pushNamed(context, '/riwayat');
+              },
+            ), // Menampilkan log_aktifitas
             const SizedBox(height: 30),
           ],
         ),

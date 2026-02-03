@@ -115,61 +115,69 @@ class _RiwayatPageState extends State<RiwayatPage> {
 
   Widget _buildLogCard(LogAktivitas log) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
+        borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
+          // Icon Indicator berdasarkan tipe aksi
+          _buildActionIcon(log.aksi),
+          const SizedBox(width: 15),
+          
+          // Informasi Text
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildRoleBadge(log.user?.role),
-                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         log.user?.username ?? 'System',
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
+                          color: const Color(0xFF1A1A1A),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    Text(
+                      log.getTimeAgo(),
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              Text(
-                log.getTimeAgo(),
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(height: 2),
+                // AKSI yang dilakukan diletakkan di bawah Nama
+                Text(
+                  log.aksi,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.blueGrey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            log.aksi,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: Colors.grey.shade700,
-              height: 1.5,
+                const SizedBox(height: 4),
+                // Badge Role di bagian bawah untuk kerapihan
+                _buildRoleSmallBadge(log.user?.role),
+              ],
             ),
           ),
         ],
@@ -177,21 +185,56 @@ class _RiwayatPageState extends State<RiwayatPage> {
     );
   }
 
-  Widget _buildRoleBadge(UserRole? role) {
+  // Icon di sebelah kiri untuk membedakan jenis aktivitas secara visual
+  Widget _buildActionIcon(String aksi) {
+    IconData iconData = Icons.info_outline;
+    Color color = Colors.grey;
+
+    if (aksi.toLowerCase().contains("tambah")) {
+      iconData = Icons.add_circle_outline;
+      color = Colors.green;
+    } else if (aksi.toLowerCase().contains("hapus")) {
+      iconData = Icons.delete_outline;
+      color = Colors.red;
+    } else if (aksi.toLowerCase().contains("setuju") || aksi.toLowerCase().contains("kembali")) {
+      iconData = Icons.check_circle_outline;
+      color = Colors.blue;
+    } else if (aksi.toLowerCase().contains("edit") || aksi.toLowerCase().contains("ubah")) {
+      iconData = Icons.edit_note;
+      color = Colors.orange;
+    }
+
     return Container(
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: _getRoleColor(role).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: color.withOpacity(0.1),
+        shape: BoxShape.circle,
       ),
-      child: Icon(
-        _getRoleIcon(role),
-        size: 14,
-        color: _getRoleColor(role),
-      ),
+      child: Icon(iconData, color: color, size: 20),
     );
   }
 
+  // Badge Role yang lebih ringkas di bawah aksi
+  Widget _buildRoleSmallBadge(UserRole? role) {
+    String roleName = role?.toString().split('.').last.toUpperCase() ?? 'SYSTEM';
+    Color color = _getRoleColor(role);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        roleName,
+        style: GoogleFonts.poppins(
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+    );
+  }
   Color _getRoleColor(UserRole? role) {
     switch (role) {
       case UserRole.admin: return Colors.redAccent;

@@ -9,28 +9,35 @@ class AlatService {
   SupabaseClient get client => supabase;
 
   Future<String?> _uploadGambar(dynamic imageSource) async {
-    try {
-      final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final String path = fileName;
+  try {
+    final String fileName =
+        'alat_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final String path = 'alat/$fileName'; // <-- penting: folder biar rapi
 
-      if (kIsWeb && imageSource is Uint8List) {
-        await supabase.storage.from('gambar').uploadBinary(path, imageSource);
-      } else if (!kIsWeb && imageSource is File) {
-        await supabase.storage.from('gambar').upload(path, imageSource);
-      } else {
-        return null;
-      }
-
-      final String imageUrl = supabase.storage
-          .from('gambar')
-          .getPublicUrl(path);
-
-      return imageUrl;
-    } catch (e) {
-      print("Error Upload Gambar ke bucket 'gambar': $e");
+    if (kIsWeb && imageSource is Uint8List) {
+      await supabase.storage.from('gambar').uploadBinary(
+        path,
+        imageSource,
+        fileOptions: const FileOptions(contentType: 'image/jpeg'),
+      );
+    } else if (!kIsWeb && imageSource is File) {
+      await supabase.storage.from('gambar').upload(
+        path,
+        imageSource,
+        fileOptions: const FileOptions(contentType: 'image/jpeg'),
+      );
+    } else {
       return null;
     }
+
+    final imageUrl = supabase.storage.from('gambar').getPublicUrl(path);
+    return imageUrl;
+  } catch (e) {
+    print("❌ Upload Gagal: $e");
+    return null;
   }
+}
+
 
   Future<List<Map<String, dynamic>>> getAllAlat() async {
     try {
@@ -53,73 +60,78 @@ class AlatService {
       return List<Map<String, dynamic>>.from(res);
     } catch (e) {
       print('Error fetching alat: $e');
-      rethrow;
+      rethrow;  
     }
   }
 
   // 2. Insert Alat dengan Gambar
   Future<Map<String, dynamic>> insertAlat(
-    Map<String, dynamic> data,
-    dynamic imageSource,
-  ) async {
+  Map<String, dynamic> data,
+  dynamic imageSource,
+) async {
+  try {
     String? imageUrl;
 
     if (imageSource != null) {
       imageUrl = await _uploadGambar(imageSource);
     }
 
-    try {
-      final response = await supabase
-          .from('alat')
-          .insert({
-            'nama_alat': data['nama_alat'],
-            'stok_alat': data['stok_alat'],
-            'kondisi_alat': data['kondisi_alat'],
-            'deskripsi': data['deskripsi'],
-            'gambar': imageUrl,
-            'id_kategori': data['id_kategori'],
-          })
-          .select('id_alat, nama_alat');
+    final payload = {
+      'nama_alat': data['nama_alat'],
+      'stok_alat': data['stok_alat'],
+      'kondisi_alat': data['kondisi_alat'],
+      'deskripsi': data['deskripsi'],
+      'id_kategori': data['id_kategori'],
+      if (imageUrl != null) 'gambar': imageUrl, // ✅ hanya kalau ada
+    };
 
-      return {'success': true, 'data': response.first};
-    } catch (e) {
-      print('Error inserting alat: $e');
-      rethrow;
-    }
+    final response =
+        await supabase.from('alat').insert(payload).select().single();
+
+    return {'success': true, 'data': response};
+  } catch (e) {
+    print('Error inserting alat: $e');
+    return {'success': false, 'message': e.toString()};
   }
+}
+
 
   Future<Map<String, dynamic>> updateAlat(
-    int id,
-    Map<String, dynamic> data,
-    dynamic newImageSource,
-  ) async {
-    String? imageUrl = data['gambar'];
+  int id,
+  Map<String, dynamic> data,
+  dynamic newImageSource,
+) async {
+  try {
+    String? imageUrl = data['gambar']; // gambar lama
 
     if (newImageSource != null) {
-      imageUrl = await _uploadGambar(newImageSource);
+      imageUrl = await _uploadGambar(newImageSource); // ganti baru
     }
 
-    try {
-      final response = await supabase
-          .from('alat')
-          .update({
-            'nama_alat': data['nama_alat'],
-            'stok_alat': data['stok_alat'],
-            'kondisi_alat': data['kondisi_alat'],
-            'deskripsi': data['deskripsi'],
-            'gambar': imageUrl,
-            'id_kategori': data['id_kategori'],
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id_alat', id)
-          .select('id_alat, nama_alat');
+    final payload = {
+      'nama_alat': data['nama_alat'],
+      'stok_alat': data['stok_alat'],
+      'kondisi_alat': data['kondisi_alat'],
+      'deskripsi': data['deskripsi'],
+      'id_kategori': data['id_kategori'],
+      'updated_at': DateTime.now().toIso8601String(),
+      if (imageUrl != null) 'gambar': imageUrl, // ✅ jangan kirim null
+    };
 
-      return {'success': true, 'data': response.first};
-    } catch (e) {
-      print('Error updating alat: $e');
-      rethrow;
-    }
+    final response = await supabase
+        .from('alat')
+        .update(payload)
+        .eq('id_alat', id)
+        .select()
+        .single();
+
+    return {'success': true, 'data': response};
+  } catch (e) {
+    print('Error updating alat: $e');
+    return {'success': false, 'message': e.toString()};
   }
+}
+
 
   Future<Map<String, dynamic>> deleteAlat(int id) async {
     try {

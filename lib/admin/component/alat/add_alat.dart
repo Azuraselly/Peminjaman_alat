@@ -26,7 +26,7 @@ class _AddAlatState extends State<AddAlat> {
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _stokController = TextEditingController();
   final TextEditingController _deskripsiController = TextEditingController();
-  String? _selectedKategori;
+  // HAPUS: String? _selectedKategori;  <-- TIDAK DIPERLUKAN LAGI
   int? _selectedKategoriId;
   String? _selectedKondisi;
   File? _imageFile;
@@ -53,10 +53,9 @@ class _AddAlatState extends State<AddAlat> {
       _namaController.text = widget.initialData!['nama_alat'] ?? "";
       _stokController.text = widget.initialData!['stok_alat']?.toString() ?? "";
 
-      // Safely handle category data
+      // HANYA set ID kategori, jangan set nama kategori
       final kategoriData = widget.initialData!['kategori'];
       if (kategoriData != null) {
-        _selectedKategori = kategoriData['nama_kategori']?.toString();
         _selectedKategoriId = kategoriData['id_kategori'] is int
             ? kategoriData['id_kategori']
             : int.tryParse(kategoriData['id_kategori']?.toString() ?? '0');
@@ -65,8 +64,9 @@ class _AddAlatState extends State<AddAlat> {
       _selectedKondisi = _formatKondisi(widget.initialData!['kondisi_alat']);
       _deskripsiController.text = widget.initialData!['deskripsi'] ?? "";
 
+      // Handle existing image (optional)
       if (widget.initialData!['gambar'] != null) {
-        // Handle existing image
+        // Implementasi load gambar jika diperlukan
       }
     }
   }
@@ -76,7 +76,7 @@ class _AddAlatState extends State<AddAlat> {
       _kategoriList = await _kategoriService.getAllKategori();
       print('Loaded ${_kategoriList.length} categories: $_kategoriList');
 
-      // Ensure all categories have proper data types
+      // Pastikan semua kategori memiliki ID integer yang valid
       _kategoriList = _kategoriList.map((kategori) {
         return {
           'id_kategori': kategori['id_kategori'] is int
@@ -113,9 +113,7 @@ class _AddAlatState extends State<AddAlat> {
       _namaError = _namaController.text.isEmpty
           ? "Nama alat tidak boleh kosong"
           : null;
-      _kategoriError = _selectedKategori == null || _selectedKategoriId == null
-          ? "Pilih kategori"
-          : null;
+      _kategoriError = _selectedKategoriId == null ? "Pilih kategori" : null; // HANYA CEK ID
       _kondisiError = _selectedKondisi == null ? "Pilih kondisi" : null;
       _stokError = _stokController.text.isEmpty
           ? "Stok tidak boleh kosong"
@@ -131,7 +129,7 @@ class _AddAlatState extends State<AddAlat> {
       try {
         final data = {
           "nama_alat": _namaController.text,
-          "id_kategori": _selectedKategoriId,
+          "id_kategori": _selectedKategoriId, // KIRIM ID LANGSUNG
           "stok_alat": int.tryParse(_stokController.text) ?? 0,
           "kondisi_alat": _selectedKondisi!.toLowerCase(),
           "deskripsi": _deskripsiController.text,
@@ -157,23 +155,12 @@ class _AddAlatState extends State<AddAlat> {
             data,
             kIsWeb ? imageBytesToUpload : imageToUpload,
           );
+          action = "memperbarui";
         } else {
           result = await _alatService.insertAlat(
             data,
             kIsWeb ? imageBytesToUpload : imageToUpload,
           );
-        }
-
-        if (widget.initialData != null &&
-            widget.initialData!['id_alat'] != null) {
-          result = await _alatService.updateAlat(
-            widget.initialData!['id_alat'],
-            data,
-            imageToUpload,
-          );
-          action = "memperbarui";
-        } else {
-          result = await _alatService.insertAlat(data, imageToUpload);
           action = "menambahkan";
         }
 
@@ -183,6 +170,8 @@ class _AddAlatState extends State<AddAlat> {
             true,
           );
           Navigator.pop(context);
+        } else {
+          widget.onShowNotification("Gagal menyimpan: ${result['message']}", false);
         }
       } catch (e) {
         widget.onShowNotification("Gagal menyimpan: ${e.toString()}", false);
@@ -263,12 +252,12 @@ class _AddAlatState extends State<AddAlat> {
                             child: kIsWeb && _imageBytes != null
                                 ? Image.memory(_imageBytes!, fit: BoxFit.cover)
                                 : !kIsWeb && _imageFile != null
-                                ? Image.file(_imageFile!, fit: BoxFit.cover)
-                                : const Icon(
-                                    Icons.add_a_photo,
-                                    size: 50,
-                                    color: Colors.grey,
-                                  ),
+                                    ? Image.file(_imageFile!, fit: BoxFit.cover)
+                                    : const Icon(
+                                        Icons.add_a_photo,
+                                        size: 50,
+                                        color: Colors.grey,
+                                      ),
                           )
                         : const Icon(
                             Icons.add_a_photo,
@@ -289,38 +278,46 @@ class _AddAlatState extends State<AddAlat> {
               Row(
                 children: [
                   Expanded(
-                    child: _buildDropdown(
-                      "KATEGORI",
-                      "Pilih Kategori",
-                      _kategoriList.isEmpty
-                          ? ['Belum ada kategori - tambah dulu']
-                          : _kategoriList
-                                .map((k) => k['nama_kategori'].toString())
-                                .toList(),
-                      _selectedKategori,
-                      _kategoriError,
-                      _kategoriList.isEmpty
-                          ? null
-                          : (val) {
-                              setState(() {
-                                _selectedKategori = val;
-                                // Find the category ID by name
-                                final selectedCategory = _kategoriList
-                                    .firstWhere(
-                                      (k) =>
-                                          k['nama_kategori'].toString() == val,
-                                      orElse: () => {'id_kategori': 0},
-                                    );
-                                _selectedKategoriId =
-                                    selectedCategory['id_kategori'] is int
-                                    ? selectedCategory['id_kategori'] as int
-                                    : int.tryParse(
-                                            selectedCategory['id_kategori']
-                                                .toString(),
-                                          ) ??
-                                          0;
-                              });
-                            },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildLabel("KATEGORI"),
+                        const SizedBox(height: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(10),
+                            border: _kategoriError != null
+                                ? Border.all(color: Colors.red)
+                                : null,
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<int>(
+                              isExpanded: true,
+                              value: _selectedKategoriId,
+                              hint: Text("Pilih Kategori"),
+                              items: _kategoriList
+                                  .map((k) => DropdownMenuItem<int>(
+                                        value: k['id_kategori'] as int,
+                                        child: Text(k['nama_kategori'].toString()),
+                                      ))
+                                  .toList(),
+                              onChanged: (val) {
+                                setState(() {
+                                  _selectedKategoriId = val;
+                                  _kategoriError = null;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        if (_kategoriError != null)
+                          Text(
+                            _kategoriError!,
+                            style: const TextStyle(color: Colors.red, fontSize: 11),
+                          ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 15),
@@ -332,7 +329,10 @@ class _AddAlatState extends State<AddAlat> {
                       _selectedKondisi,
                       _kondisiError,
                       (val) {
-                        setState(() => _selectedKondisi = val);
+                        setState(() {
+                          _selectedKondisi = val;
+                          _kondisiError = null;
+                        });
                       },
                     ),
                   ),
@@ -456,13 +456,12 @@ class _AddAlatState extends State<AddAlat> {
                   .map((val) => DropdownMenuItem(value: val, child: Text(val)))
                   .toList(),
               onChanged: onChanged,
-              disabledHint: Text(hint, style: TextStyle(color: Colors.grey)),
             ),
           ),
         ),
         if (errorText != null)
           Text(
-            errorText,
+            errorText!,
             style: const TextStyle(color: Colors.red, fontSize: 11),
           ),
       ],

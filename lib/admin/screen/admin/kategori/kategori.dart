@@ -13,13 +13,13 @@ class Kategori extends StatefulWidget {
 
   @override
   State<Kategori> createState() => _KategoriState();
-  
 }
 
 class _KategoriState extends State<Kategori> {
   final _kategoriService = KategoriService();
   List<Map<String, dynamic>> _kategoriList = [];
   List<Map<String, dynamic>> _filteredKategoriList = [];
+  List<Map<String, dynamic>> _alatList = [];
   bool _isLoading = true;
   bool _showNotification = false;
   String _notificationMessage = '';
@@ -52,10 +52,16 @@ class _KategoriState extends State<Kategori> {
         _filteredKategoriList = _kategoriList;
       } else {
         _filteredKategoriList = _kategoriList.where((kategori) {
-          return kategori['nama_kategori'].toString().toLowerCase().contains(query.toLowerCase());
+          return kategori['nama_kategori'].toString().toLowerCase().contains(
+            query.toLowerCase(),
+          );
         }).toList();
       }
     });
+  }
+
+  int _hitungJumlahAlat(int kategoriId) {
+    return _alatList.where((alat) => alat['id_kategori'] == kategoriId).length;
   }
 
   void _showNotificationMessage(String message, {bool isError = false}) {
@@ -77,10 +83,15 @@ class _KategoriState extends State<Kategori> {
     if (result != null) {
       try {
         await _kategoriService.addKategori(result);
-        _showNotificationMessage('Berhasil menambahkan kategori "${result['nama_kategori']}"');
+        _showNotificationMessage(
+          'Berhasil menambahkan kategori "${result['nama_kategori']}"',
+        );
         _loadKategori();
       } catch (e) {
-        _showNotificationMessage('Gagal menambahkan kategori: $e', isError: true);
+        _showNotificationMessage(
+          'Gagal menambahkan kategori: $e',
+          isError: true,
+        );
       }
     }
   }
@@ -94,23 +105,28 @@ class _KategoriState extends State<Kategori> {
     if (result != null) {
       try {
         await _kategoriService.updateKategori(kategori['id_kategori'], result);
-        _showNotificationMessage('Berhasil mengupdate kategori "${result['nama_kategori']}"');
+        _showNotificationMessage(
+          'Berhasil mengupdate kategori "${result['nama_kategori']}"',
+        );
         _loadKategori();
       } catch (e) {
-        _showNotificationMessage('Gagal mengupdate kategori: $e', isError: true);
+        _showNotificationMessage(
+          'Gagal mengupdate kategori: $e',
+          isError: true,
+        );
       }
     }
   }
 
-  
   void _showDeleteConfirmation(
-      BuildContext context, String kategori ,VoidCallback onDelete) {
+    BuildContext context,
+    String kategori,
+    VoidCallback onDelete,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(25),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         elevation: 0,
         backgroundColor: Colors.white,
         child: Column(
@@ -145,11 +161,7 @@ class _KategoriState extends State<Kategori> {
                     ),
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 50,
-                  color: const Color(0xFFEEEEEE),
-                ),
+                Container(width: 1, height: 50, color: const Color(0xFFEEEEEE)),
                 Expanded(
                   child: TextButton(
                     onPressed: () {
@@ -173,12 +185,11 @@ class _KategoriState extends State<Kategori> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      
+
       body: Stack(
         children: [
           Column(
@@ -223,13 +234,24 @@ class _KategoriState extends State<Kategori> {
                         onChanged: _searchKategori,
                         decoration: InputDecoration(
                           hintText: "Cari kategori...",
-                          hintStyle: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.abumud,),
-                          prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.abumud),
+                          hintStyle: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.abumud,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            size: 18,
+                            color: AppColors.abumud,
+                          ),
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: AppColors.abumud, width: 1),
+                            borderSide: BorderSide(
+                              color: AppColors.abumud,
+                              width: 1,
+                            ),
                           ),
                         ),
                       ),
@@ -237,20 +259,24 @@ class _KategoriState extends State<Kategori> {
                   ],
                 ),
               ),
-             Expanded(
+              Expanded(
                 child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _filteredKategoriList.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : _filteredKategoriList.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.category_outlined, size: 80, color: Colors.grey[400]),
+                            Icon(
+                              Icons.category_outlined,
+                              size: 80,
+                              color: Colors.grey[400],
+                            ),
                             const SizedBox(height: 20),
                             Text(
                               _searchController.text.isEmpty
-                                ? "Belum ada kategori"
-                                : "Kategori tidak ditemukan",
+                                  ? "Belum ada kategori"
+                                  : "Kategori tidak ditemukan",
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 color: Colors.grey[600],
@@ -264,24 +290,36 @@ class _KategoriState extends State<Kategori> {
                         itemCount: _filteredKategoriList.length,
                         itemBuilder: (context, index) {
                           final kategori = _filteredKategoriList[index];
+                          final jumlahUnit = _hitungJumlahAlat(
+                            kategori['id_kategori'],
+                          );
+
                           return KategoriCard(
                             name: kategori['nama_kategori'] ?? '',
                             deskripsi: kategori['deskripsi_kategori'] ?? '-',
-                            jumlah: "0 Unit", // TODO: count dari tabel alat
+                            jumlah: "$jumlahUnit Unit",
+
                             onEdit: () => _showEditKategoriDialog(kategori),
-                           onDelete: () => _showDeleteConfirmation(
-  context, // konteks saat ini
-  kategori['nama_kategori'], // nama kategori yang mau dihapus
-  () async {
-    try {
-      await _kategoriService.deleteKategori(kategori['id_kategori']);
-      _showNotificationMessage('Kategori "${kategori['nama_kategori']}" berhasil dihapus');
-      _loadKategori();
-    } catch (e) {
-      _showNotificationMessage('Gagal menghapus kategori: $e', isError: true);
-    }
-  },
-),
+                            onDelete: () => _showDeleteConfirmation(
+                              context, // konteks saat ini
+                              kategori['nama_kategori'], // nama kategori yang mau dihapus
+                              () async {
+                                try {
+                                  await _kategoriService.deleteKategori(
+                                    kategori['id_kategori'],
+                                  );
+                                  _showNotificationMessage(
+                                    'Kategori "${kategori['nama_kategori']}" berhasil dihapus',
+                                  );
+                                  _loadKategori();
+                                } catch (e) {
+                                  _showNotificationMessage(
+                                    'Gagal menghapus kategori: $e',
+                                    isError: true,
+                                  );
+                                }
+                              },
+                            ),
 
                             onTapDetail: () => Navigator.push(
                               context,
@@ -315,7 +353,7 @@ class _KategoriState extends State<Kategori> {
                     ).withOpacity(0.95), // Biru gelap transparan
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child:  Row(
+                  child: Row(
                     children: [
                       Icon(Icons.check_circle, color: Colors.white),
                       SizedBox(width: 15),
@@ -335,10 +373,10 @@ class _KategoriState extends State<Kategori> {
             ),
         ],
       ),
-       bottomNavigationBar: CustomNavbar(
-        selectedIndex: 1, 
+      bottomNavigationBar: CustomNavbar(
+        selectedIndex: 1,
         onItemTapped: (index) {
-          Navigator.pop(context); 
+          Navigator.pop(context);
         },
       ),
     );

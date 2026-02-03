@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:inventory_alat/peminjam/models/peminjam_models.dart';
 import 'package:inventory_alat/service/peminjaman_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BerandaPeminjam extends StatefulWidget {
   final Function(Alat) onAddToCart;
@@ -49,8 +48,12 @@ class _BerandaPeminjamState extends State<BerandaPeminjam> {
       ]);
 
       setState(() {
-        _daftarAlat = results[0] as List<Alat>;
-        _daftarKategori = results[1] as List<Kategori>;
+        _daftarAlat = (results[0] as List<Map<String, dynamic>>)
+            .map((json) => Alat.fromJson(json))
+            .toList();
+        _daftarKategori = (results[1] as List<Map<String, dynamic>>)
+            .map((json) => Kategori.fromJson(json))
+            .toList();
         _activePeminjamanCount = results[2] as int;
         _userName = profile?['username'] as String?;
         _isLoading = false;
@@ -280,11 +283,12 @@ class _BerandaPeminjamState extends State<BerandaPeminjam> {
                 color: const Color(0xFFD1DCEB),
                 borderRadius: BorderRadius.circular(15),
                 image: alat.gambar != null
-                    ? DecorationImage(
-                        image: NetworkImage(alat.gambar!),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
+    ? DecorationImage(
+        image: NetworkImage(alat.gambar!), // <-- pakai URL dari database
+        fit: BoxFit.cover,
+      )
+    : null,
+
               ),
               child: alat.gambar == null
                   ? const Center(

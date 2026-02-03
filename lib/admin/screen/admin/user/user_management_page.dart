@@ -18,6 +18,7 @@ class UserManagementPage extends StatefulWidget {
 class _UserManagementPageState extends State<UserManagementPage> {
   bool _showNotification = false;
   String _notifMessage = "";
+  String _currentAdminName = "Admin";
   bool _isLoading = false;
 
   List<Map<String, dynamic>> _filteredUsers = [];
@@ -32,17 +33,32 @@ class _UserManagementPageState extends State<UserManagementPage> {
     _loadData();
   }
 
-  Future<void> _loadData() async {
-    try {
-      final users = await _userService.getAllUsers();
+Future<void> _loadData() async {
+  try {
+    // Ambil ID user yang login
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser != null) {
+      final adminData = await Supabase.instance.client
+          .from('users')
+          .select('username')
+          .eq('id_user', currentUser.id)
+          .single();
+      
       setState(() {
-        _allUsers = users;
-        _filteredUsers = users;
+        _currentAdminName = adminData['username'] ?? "Admin";
       });
-    } catch (e) {
-      _showErrorDialog("Gagal memuat data user: ${e.toString()}");
     }
+
+    final users = await _userService.getAllUsers();
+    setState(() {
+      _allUsers = users;
+      _filteredUsers = users;
+    });
+  } catch (e) {
+    print("Error load admin name: $e");
+    // Opsional: tetap muat data user meskipun nama admin gagal
   }
+}
 
   void _runFilter(String query) {
     setState(() {
@@ -225,57 +241,58 @@ class _UserManagementPageState extends State<UserManagementPage> {
   }
 
   void _showTopNotification(BuildContext context, String message) {
-    OverlayState? overlayState = Overlay.of(context);
-    OverlayEntry overlayEntry;
+  OverlayState? overlayState = Overlay.of(context);
+  OverlayEntry overlayEntry;
 
-    overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: 50,
-        left: 25,
-        right: 25,
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.85),
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+  overlayEntry = OverlayEntry(
+    builder: (context) => Positioned(
+      top: 50,
+      left: 25,
+      right: 25,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.95), // Lebih solid agar terbaca
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _currentAdminName, // <--- BERUBAH DI SINI
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF3B71B9), // Beri warna agar lebih stand out
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Admin 01",
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
+              ),
+              Text(
+                message,
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: Colors.black87,
                 ),
-                Text(
-                  message,
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
-    );
+    ),
+  );
 
-    overlayState.insert(overlayEntry);
-    Future.delayed(const Duration(seconds: 2), () => overlayEntry.remove());
-  }
-
+  overlayState.insert(overlayEntry);
+  Future.delayed(const Duration(seconds: 2), () => overlayEntry.remove());
+}
   void _showErrorDialog(String message) {
     showDialog(
       context: context,

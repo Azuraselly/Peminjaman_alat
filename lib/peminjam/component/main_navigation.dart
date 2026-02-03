@@ -5,6 +5,7 @@ import 'package:inventory_alat/peminjam/screen/beranda.dart';
 import 'package:inventory_alat/peminjam/screen/cari.dart';
 import 'package:inventory_alat/peminjam/screen/profil.dart';
 import 'package:inventory_alat/peminjam/screen/riwayat.dart';
+import 'package:inventory_alat/peminjam/screen/checkout.dart';
 
 class MainNavigationPeminjam extends StatefulWidget {
   const MainNavigationPeminjam({super.key});
@@ -33,7 +34,9 @@ class _MainNavigationPeminjamState extends State<MainNavigationPeminjam> {
           _keranjang[existingIndex].jumlah++;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${alat.namaAlat} ditambahkan (${_keranjang[existingIndex].jumlah} unit)'),
+              content: Text(
+                '${alat.namaAlat} ditambahkan (${_keranjang[existingIndex].jumlah} unit)',
+              ),
               duration: const Duration(seconds: 1),
             ),
           );
@@ -85,13 +88,23 @@ class _MainNavigationPeminjamState extends State<MainNavigationPeminjam> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      
+
       // 1. TOMBOL CHECKOUT MELAYANG DI TENGAH
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           if (_keranjang.isNotEmpty) {
-            // Navigate to keranjang page
-            setState(() => _currentIndex = 1);
+            // Navigate to checkout page
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => KeranjangPeminjam(
+                  items: _keranjang,
+                  onRemove: _removeFromKeranjang,
+                  onUpdateQuantity: _updateQuantity,
+                  onClearCart: _clearKeranjang,
+                ),
+              ),
+            );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -153,7 +166,6 @@ class _MainNavigationPeminjamState extends State<MainNavigationPeminjam> {
               _buildNavItem(Icons.search, "Cari", 1),
 
               const SizedBox(width: 40), // Ruang kosong untuk tombol tengah
-              
               // Sisi Kanan
               _buildNavItem(Icons.history_rounded, "Riwayat", 2),
               _buildNavItem(Icons.person, "Profil", 3),
@@ -202,13 +214,9 @@ class _MainNavigationPeminjamState extends State<MainNavigationPeminjam> {
   Widget _buildPageContent() {
     switch (_currentIndex) {
       case 0:
-        return BerandaPeminjam(
-          onAddToCart: _addToKeranjang,
-        );
+        return BerandaPeminjam(onAddToCart: _addToKeranjang);
       case 1:
-        return CariPeminjam(
-          onAddToCart: _addToKeranjang,
-        );
+        return CariPeminjam(onAddToCart: _addToKeranjang);
       case 2:
         return const RiwayatPeminjam();
       case 3:

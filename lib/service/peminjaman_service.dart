@@ -27,7 +27,7 @@ class PeminjamanService {
     try {
       final response = await _supabase
           .from('alat')
-          .select('id_alat, nama_alat, stok_alat, kondisi_alat')
+          .select('id_alat, nama_alat, stok_alat, kondisi_alat, gambar')
           .isFilter('deleted_at', null)
           .gt('stok_alat', 0)
           .order('nama_alat');
@@ -195,7 +195,7 @@ class PeminjamanService {
           .from('peminjaman')
           .select('''
           *,
-          alat!peminjaman_id_alat_fkey(nama_alat, gambar_alat)
+          alat!peminjaman_id_alat_fkey(nama_alat, gambar)
         ''')
           .eq('id_user', user!.id)
           .order('created_at', ascending: false);

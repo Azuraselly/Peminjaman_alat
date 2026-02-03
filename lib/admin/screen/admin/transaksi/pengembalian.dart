@@ -84,12 +84,10 @@ class _DataPengembalianPageState extends State<DataPengembalianPage> {
                             final item = snapshot.data![index];
                             // Ambil nested data dari join table peminjaman
                             final p = item['peminjaman'];
-                            final user = p != null
-                                ? p['users']['username']
-                                : "Unknown";
-                            final alat = p != null
-                                ? p['alat']['nama_alat']
-                                : "Alat Dihapus";
+
+                            final user = p?['users']?['username'] ?? "Unknown User";
+                            final alat = p?['alat']?['nama_alat'] ?? "Alat Dihapus";
+
 
                             return _buildReturnCard(
                               context,

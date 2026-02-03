@@ -21,7 +21,7 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
   List<Map<String, dynamic>> _allAlat = [];
   bool _isLoading = false;
   bool _showNotification = false;
-  String _notifMessage = "";
+  String _notifMessage = "";  
   bool _notifIsSuccess = true;
 
   @override
@@ -456,7 +456,7 @@ class _ManajemenAlatPageState extends State<ManajemenAlatPage> {
       bottomNavigationBar: CustomNavbar(
         selectedIndex: 1,
         onItemTapped: (index) {
-          Navigator.pop(context); // Kembali ke navigasi utama
+          Navigator.pop(context); 
         },
       ),
     );
