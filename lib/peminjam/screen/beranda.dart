@@ -1,15 +1,14 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:inventory_alat/peminjam/models/peminjam_models.dart';
+import 'package:inventory_alat/peminjam/screen/profil.dart';
 import 'package:inventory_alat/service/peminjaman_service.dart';
 
 class BerandaPeminjam extends StatefulWidget {
   final Function(Alat) onAddToCart;
 
-  const BerandaPeminjam({
-    super.key,
-    required this.onAddToCart,
-  });
+  const BerandaPeminjam({super.key, required this.onAddToCart});
 
   @override
   State<BerandaPeminjam> createState() => _BerandaPeminjamState();
@@ -17,15 +16,11 @@ class BerandaPeminjam extends StatefulWidget {
 
 class _BerandaPeminjamState extends State<BerandaPeminjam> {
   final _service = PeminjamanService();
-  
   List<Alat> _daftarAlat = [];
   List<Kategori> _daftarKategori = [];
   bool _isLoading = true;
   String _searchQuery = "";
   int? _selectedKategoriId;
-  String _selectedKategoriName = "Semua";
-  String? _userName;
-  int _activePeminjamanCount = 0;
 
   @override
   void initState() {
@@ -35,77 +30,104 @@ class _BerandaPeminjamState extends State<BerandaPeminjam> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    
     try {
-      // Load user profile
-      final profile = await _service.getUserProfile();
-      
-      // Load alat and kategori in parallel
       final results = await Future.wait([
         _service.getAlat(),
         _service.getAllKategori(),
-        _service.getActivePeminjamanCount(),
       ]);
 
       setState(() {
-        _daftarAlat = (results[0] as List<Map<String, dynamic>>)
-            .map((json) => Alat.fromJson(json))
+        _daftarAlat = (results[0] as List)
+            .map((e) => Alat.fromJson(e))
             .toList();
-        _daftarKategori = (results[1] as List<Map<String, dynamic>>)
-            .map((json) => Kategori.fromJson(json))
+        _daftarKategori = (results[1] as List)
+            .map((e) => Kategori.fromJson(e))
             .toList();
-        _activePeminjamanCount = results[2] as int;
-        _userName = profile?['username'] as String?;
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading data: $e');
       setState(() => _isLoading = false);
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memuat data: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
   List<Alat> get _filteredAlat {
     return _daftarAlat.where((alat) {
-      final matchesSearch = alat.namaAlat
-          .toLowerCase()
-          .contains(_searchQuery.toLowerCase());
-      final matchesKategori = _selectedKategoriId == null ||
-          alat.idKategori == _selectedKategoriId;
+      final matchesSearch = alat.namaAlat.toLowerCase().contains(
+        _searchQuery.toLowerCase(),
+      );
+      final matchesKategori =
+          _selectedKategoriId == null ||
+          alat.idKategori == _selectedKategoriId.toString();
       return matchesSearch && matchesKategori;
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: Column(
-        children: [
-          // Header
-          _buildHeader(),
-          
-          // Filter Kategori
-          const SizedBox(height: 20),
-          _buildKategoriFilter(),
-          
-          // Grid Alat
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFD),
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        color: const Color(0xFF1A314D),
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // APP BAR DENGAN SEARCH BOX
+            SliverToBoxAdapter(child: _buildHeader()),
+
+            // KATEGORI HORIZONTAL
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: _buildKategoriFilter(),
+              ),
+            ),
+
+            // JUDUL SECTION
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 25,
+                  vertical: 10,
+                ),
+                child: Text(
+                  "Tersedia Untukmu",
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1A314D),
+                  ),
+                ),
+              ),
+            ),
+
+            // GRID ALAT
+            _isLoading
+                ? const SliverFillRemaining(
+                    child: Center(child: CircularProgressIndicator()),
+                  )
                 : _filteredAlat.isEmpty
-                    ? _buildEmptyState()
-                    : _buildAlatGrid(),
-          ),
-        ],
+                ? SliverFillRemaining(child: _buildEmptyState())
+                : SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    sliver: SliverGrid(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 15,
+                            mainAxisSpacing: 15,
+                            childAspectRatio: 0.7,
+                          ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) =>
+                            _buildAlatCard(_filteredAlat[index]),
+                        childCount: _filteredAlat.length,
+                      ),
+                    ),
+                  ),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
       ),
     );
   }
@@ -116,11 +138,12 @@ class _BerandaPeminjamState extends State<BerandaPeminjam> {
       decoration: const BoxDecoration(
         color: Color(0xFF1A314D),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
+          bottomLeft: Radius.circular(35),
+          bottomRight: Radius.circular(35),
         ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -129,70 +152,63 @@ class _BerandaPeminjamState extends State<BerandaPeminjam> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _getGreeting(),
+                    "Halo, Selamat Pinjam!",
                     style: GoogleFonts.poppins(
                       color: Colors.white70,
-                      fontSize: 12,
+                      fontSize: 14,
                     ),
                   ),
                   Text(
-                    _userName ?? 'Loading...',
+                    "Cari Alat Apa?",
                     style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 20,
+                      fontSize: 24,
                     ),
                   ),
                 ],
               ),
-              Stack(
-                children: [
-                  const CircleAvatar(
-                    backgroundColor: Colors.white12,
-                    child: Icon(
-                      Icons.assignment_outlined,
-                      color: Colors.white,
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProfilPeminjam(onLogout: () {}),
                     ),
-                  ),
-                  if (_activePeminjamanCount > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          _activePeminjamanCount.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+                  );
+                },
+                borderRadius: BorderRadius.circular(30),
+                child: const CircleAvatar(
+                  radius: 25,
+                  backgroundColor: Colors.white12,
+                  child: Icon(Icons.person_outline, color: Colors.white),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 25),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: TextField(
-              onChanged: (value) => setState(() => _searchQuery = value),
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: "Cari alat bengkel...",
-                hintStyle: GoogleFonts.poppins(color: Colors.white60),
-                border: InputBorder.none,
-                icon: const Icon(Icons.search, color: Colors.white70),
+          // SEARCH BAR GLASSMORPHISM
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                ),
+                child: TextField(
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    hintText: "Cari bor, obeng, atau palu...",
+                    hintStyle: TextStyle(color: Colors.white54),
+                    border: InputBorder.none,
+                    icon: Icon(Icons.search, color: Colors.white70),
+                  ),
+                ),
               ),
             ),
           ),
@@ -202,62 +218,51 @@ class _BerandaPeminjamState extends State<BerandaPeminjam> {
   }
 
   Widget _buildKategoriFilter() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          // "Semua" button
-          _buildKategoriChip(null, "Semua"),
-          // Kategori buttons
-          ..._daftarKategori.map((kategori) => 
-            _buildKategoriChip(kategori.idKategori, kategori.namaKategori)
-          ),
-        ],
+    return SizedBox(
+      height: 45,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: _daftarKategori.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) return _buildChip(null, "Semua");
+          final kat = _daftarKategori[index - 1];
+          return _buildChip(kat.idKategori, kat.namaKategori);
+        },
       ),
     );
   }
 
-  Widget _buildKategoriChip(int? kategoriId, String nama) {
-    final isSelected = _selectedKategoriId == kategoriId;
+  Widget _buildChip(int? id, String name) {
+    bool isSelected = _selectedKategoriId == id;
     return GestureDetector(
-      onTap: () => setState(() {
-        _selectedKategoriId = kategoriId;
-        _selectedKategoriName = nama;
-      }),
-      child: Container(
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      onTap: () => setState(() => _selectedKategoriId = id),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1A314D) : const Color(0xFFE9EEF5),
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? const Color(0xFF1A314D) : Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: const Color(0xFF1A314D).withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+          ],
         ),
+        alignment: Alignment.center,
         child: Text(
-          nama,
+          name,
           style: GoogleFonts.poppins(
-            color: isSelected ? Colors.white : Colors.black54,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
+            color: isSelected ? Colors.white : Colors.grey[600],
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 13,
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildAlatGrid() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 15,
-        mainAxisSpacing: 15,
-        childAspectRatio: 0.75,
-      ),
-      itemCount: _filteredAlat.length,
-      itemBuilder: (context, index) {
-        final alat = _filteredAlat[index];
-        return _buildAlatCard(alat);
-      },
     );
   }
 
@@ -265,78 +270,119 @@ class _BerandaPeminjamState extends State<BerandaPeminjam> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // IMAGE SECTION
           Expanded(
-            child: Container(
-              margin: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFD1DCEB),
-                borderRadius: BorderRadius.circular(15),
-                image: alat.gambar != null
-    ? DecorationImage(
-        image: NetworkImage(alat.gambar!), // <-- pakai URL dari database
-        fit: BoxFit.cover,
-      )
-    : null,
-
-              ),
-              child: alat.gambar == null
-                  ? const Center(
-                      child: Icon(
-                        Icons.handyman_outlined,
+            child: Stack(
+              children: [
+                Container(
+                  margin: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F4F8),
+                    borderRadius: BorderRadius.circular(20),
+                    image: alat.gambar != null
+                        ? DecorationImage(
+                            image: NetworkImage(alat.gambar!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: alat.gambar == null
+                      ? const Center(
+                          child: Icon(
+                            Icons.handyman_rounded,
+                            size: 40,
+                            color: Colors.black12,
+                          ),
+                        )
+                      : null,
+                ),
+                // STOK TAG
+                Positioned(
+                  top: 15,
+                  left: 15,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: alat.isAvailable
+                          ? Colors.green.withOpacity(0.9)
+                          : Colors.red.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      alat.isAvailable ? "Tersedia" : "Habis",
+                      style: const TextStyle(
                         color: Colors.white,
-                        size: 40,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
                       ),
-                    )
-                  : null,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+          // INFO SECTION
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            padding: const EdgeInsets.all(15),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   alat.namaAlat,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 5),
+                Text(
+                  alat.kategori,
+                  style: GoogleFonts.poppins(color: Colors.grey, fontSize: 11),
+                ),
+                const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       "Stok: ${alat.stokAlat}",
                       style: GoogleFonts.poppins(
-                        color: alat.isAvailable ? Colors.green : Colors.red,
-                        fontSize: 11,
                         fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1A314D),
                       ),
                     ),
                     GestureDetector(
                       onTap: alat.isAvailable
                           ? () => widget.onAddToCart(alat)
                           : null,
-                      child: Icon(
-                        Icons.add_circle,
-                        color: alat.isAvailable
-                            ? const Color(0xFF1A314D)
-                            : Colors.grey,
-                        size: 28,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: alat.isAvailable
+                              ? const Color(0xFF1A314D)
+                              : Colors.grey[300],
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.add_shopping_cart_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ),
                     ),
                   ],
@@ -354,38 +400,17 @@ class _BerandaPeminjamState extends State<BerandaPeminjam> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.search_off,
-            size: 80,
-            color: Colors.grey[300],
-          ),
-          const SizedBox(height: 20),
+          Icon(Icons.search_off_rounded, size: 100, color: Colors.grey[200]),
+          const SizedBox(height: 15),
           Text(
-            "Alat tidak ditemukan",
+            "Yah, alatnya nggak ada...",
             style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
               color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Coba kata kunci atau kategori lain",
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: Colors.grey,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
       ),
     );
-  }
-
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Selamat Pagi,';
-    if (hour < 15) return 'Selamat Siang,';
-    if (hour < 18) return 'Selamat Sore,';
-    return 'Selamat Malam,';
   }
 }

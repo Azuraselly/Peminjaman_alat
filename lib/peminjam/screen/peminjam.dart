@@ -58,7 +58,7 @@ class _PeminjamState extends State<Peminjam> {
 
 
       /// ================= PROFIL =================
-      const ProfilPeminjam(),
+      ProfilPeminjam(onLogout: () {  },),
     ];
 
     return Scaffold(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:inventory_alat/admin/component/alat/autocomplete_field.dart';
+import 'package:inventory_alat/admin/component/transaksi/autocomplete_field.dart';
 import 'package:inventory_alat/service/peminjaman_service.dart';
 
 

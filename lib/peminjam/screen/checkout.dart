@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:inventory_alat/peminjam/models/peminjam_models.dart';
 import 'package:inventory_alat/service/peminjaman_service.dart';
+import 'package:intl/intl.dart';
 
 class KeranjangPeminjam extends StatefulWidget {
   final List<KeranjangItem> items;
@@ -23,348 +24,268 @@ class KeranjangPeminjam extends StatefulWidget {
 
 class _KeranjangPeminjamState extends State<KeranjangPeminjam> {
   final _service = PeminjamanService();
-  DateTime _batasPengembalian = DateTime.now().add(const Duration(days: 7));
+  DateTime _batasPengembalian = DateTime.now().add(const Duration(days: 3));
   bool _isProcessing = false;
 
+  // Menghitung total item di keranjang
+  int get _totalAlat => widget.items.fold(0, (sum, item) => sum + item.jumlah);
+
   Future<void> _processCheckout() async {
-    if (widget.items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Keranjang kosong')),
-      );
-      return;
-    }
+    if (widget.items.isEmpty) return;
 
     setState(() => _isProcessing = true);
 
     try {
+      // Pastikan service menerima list KeranjangItem
       await _service.createPeminjamanCart(
         items: widget.items,
         batasPengembalian: _batasPengembalian,
       );
 
-      widget.onClearCart();
-
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Peminjaman berhasil diajukan!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // Navigate to riwayat
-        // You might want to use a proper navigation method here
+        _showSuccessDialog();
+        widget.onClearCart();
       }
     } catch (e) {
-      print('Error checkout: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mengajukan peminjaman: $e'),
-            backgroundColor: Colors.red,
+            content: Text('Gagal: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } finally {
-      setState(() => _isProcessing = false);
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
-  Future<void> _selectDate() async {
-    final DateTime? picked = await showDatePicker(
+  void _showSuccessDialog() {
+    showDialog(
       context: context,
-      initialDate: _batasPengembalian,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF1A314D),
-            ),
-          ),
-          child: child!,
-        );
-      },
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, color: Colors.green, size: 80),
+            const SizedBox(height: 20),
+            Text("Berhasil!", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 20)),
+            const SizedBox(height: 10),
+            Text("Permintaan peminjaman Anda telah dikirim.", 
+                 textAlign: TextAlign.center,
+                 style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey)),
+            const SizedBox(height: 25),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A314D),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text("OK", style: TextStyle(color: Colors.white)),
+              ),
+            )
+          ],
+        ),
+      ),
     );
-
-    if (picked != null && picked != _batasPengembalian) {
-      setState(() {
-        _batasPengembalian = picked;
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFFF8FAFD),
       appBar: AppBar(
         title: Text(
           "Keranjang Pinjam",
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
         ),
         backgroundColor: const Color(0xFF1A314D),
         elevation: 0,
         centerTitle: true,
-        automaticallyImplyLeading: false,
+        actions: [
+          if (widget.items.isNotEmpty)
+            IconButton(
+              onPressed: () => widget.onClearCart(),
+              icon: const Icon(Icons.delete_sweep_rounded, color: Colors.white70),
+            )
+        ],
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(25)),
         ),
       ),
-      body: Column(
-        children: [
-          // List Items
-          Expanded(
-            child: widget.items.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                    itemCount: widget.items.length,
-                    itemBuilder: (context, index) => _buildCartCard(index),
-                  ),
-          ),
-        ],
-      ),
-      bottomSheet: widget.items.isEmpty ? null : _buildCheckoutPanel(),
+      body: widget.items.isEmpty ? _buildEmptyState() : _buildCartList(),
+      bottomNavigationBar: widget.items.isEmpty ? null : _buildBottomAction(),
     );
   }
 
-  Widget _buildCartCard(int index) {
-    final item = widget.items[index];
-    final alat = item.alat;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Row(
-        children: [
-          // Image
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              color: const Color(0xFFD1DCEB),
-              borderRadius: BorderRadius.circular(12),
-              image: alat.gambar != null
-                  ? DecorationImage(
-                      image: NetworkImage(alat.gambar!),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-            ),
-            child: alat.gambar == null
-                ? const Icon(
-                    Icons.build_rounded,
-                    color: Color(0xFF1A314D),
-                  )
-                : null,
-          ),
-          const SizedBox(width: 15),
-
-          // Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  alat.namaAlat,
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  "Kategori: ${alat.kategori}",
-                  style: GoogleFonts.poppins(
-                    color: Colors.grey,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                
-                // Quantity controls
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, size: 20),
-                      onPressed: item.canDecrease
-                          ? () => widget.onUpdateQuantity(index, item.jumlah - 1)
-                          : null,
-                      color: item.canDecrease
-                          ? const Color(0xFF1A314D)
-                          : Colors.grey,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        "${item.jumlah}",
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline, size: 20),
-                      onPressed: item.canIncrease
-                          ? () => widget.onUpdateQuantity(index, item.jumlah + 1)
-                          : null,
-                      color: item.canIncrease
-                          ? const Color(0xFF1A314D)
-                          : Colors.grey,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "/ ${alat.stokAlat}",
-                      style: GoogleFonts.poppins(
-                        color: Colors.grey,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Delete button
-          IconButton(
-            onPressed: () => widget.onRemove(index),
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-          )
-        ],
-      ),
+  Widget _buildCartList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: widget.items.length,
+      itemBuilder: (context, index) {
+        final item = widget.items[index];
+        return _buildCartItem(item, index);
+      },
     );
   }
 
-  Widget _buildCheckoutPanel() {
+  Widget _buildCartItem(KeranjangItem item, int index) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(25, 20, 25, 40),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          )
-        ],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 5))],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: IntrinsicHeight(
+          child: Row(
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Estimasi Pengembalian:",
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  Text(
-                    "${_batasPengembalian.day}/${_batasPengembalian.month}/${_batasPengembalian.year}",
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1A314D),
-                    ),
-                  ),
-                ],
+              // Gambar Alat
+              Container(
+                width: 100,
+                color: const Color(0xFFF0F4F8),
+                child: item.alat.gambar != null
+                    ? Image.network(item.alat.gambar!, fit: BoxFit.cover)
+                    : const Icon(Icons.handyman_rounded, color: Color(0xFF1A314D), size: 40),
               ),
-              IconButton(
-                onPressed: _selectDate,
-                icon: const Icon(
-                  Icons.calendar_month,
-                  color: Color(0xFF1A314D),
+              // Detail Info
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(15),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.alat.namaAlat,
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(item.alat.kategori, style: GoogleFonts.poppins(color: Colors.grey, fontSize: 11)),
+                      const Spacer(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildQtyController(item, index),
+                          GestureDetector(
+                            onTap: () => widget.onRemove(index),
+                            child: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 22),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 15),
-          
-          // Total items
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8F9FA),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Total Item:",
-                  style: GoogleFonts.poppins(fontSize: 13),
-                ),
-                Text(
-                  "${widget.items.length} alat",
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQtyController(KeranjangItem item, int index) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          _qtyButton(Icons.remove, () => widget.onUpdateQuantity(index, item.jumlah - 1), enabled: item.jumlah > 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text("${item.jumlah}", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+          ),
+          _qtyButton(Icons.add, () => widget.onUpdateQuantity(index, item.jumlah + 1), 
+                    enabled: item.jumlah < item.alat.stokAlat),
+        ],
+      ),
+    );
+  }
+
+  Widget _qtyButton(IconData icon, VoidCallback onTap, {bool enabled = true}) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        child: Icon(icon, size: 18, color: enabled ? const Color(0xFF1A314D) : Colors.grey),
+      ),
+    );
+  }
+
+  Widget _buildBottomAction() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(25, 20, 25, 30),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5))],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Picker Tanggal
+          GestureDetector(
+            onTap: _selectDate,
+            child: Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFD),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today_rounded, color: Color(0xFF1A314D), size: 20),
+                  const SizedBox(width: 15),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Batas Pengembalian", style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey)),
+                      Text(DateFormat('EEEE, dd MMMM yyyy').format(_batasPengembalian), 
+                           style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.bold)),
+                    ],
                   ),
-                ),
-              ],
+                  const Spacer(),
+                  const Icon(Icons.edit_calendar_rounded, color: Colors.grey, size: 20),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 15),
-          
-          // Checkout button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isProcessing ? null : _processCheckout,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1A314D),
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
+          const SizedBox(height: 20),
+          // Ringkasan & Button
+          Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Total Pinjaman", style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
+                  Text("$_totalAlat Alat", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF1A314D))),
+                ],
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isProcessing ? null : _processCheckout,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A314D),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    elevation: 0,
+                  ),
+                  child: _isProcessing 
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : Text("Ajukan Pinjaman", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ),
-              child: _isProcessing
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Text(
-                      "Ajukan Peminjaman",
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-            ),
+            ],
           ),
         ],
       ),
@@ -376,29 +297,34 @@ class _KeranjangPeminjamState extends State<KeranjangPeminjam> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.shopping_cart_outlined,
-            size: 100,
-            color: Colors.grey[300],
+          Image.network(
+            'https://cdn-icons-png.flaticon.com/512/11329/11329060.png', // Ilustrasi box kosong
+            height: 150,
+            errorBuilder: (c, e, s) => const Icon(Icons.shopping_cart_outlined, size: 100, color: Colors.grey),
           ),
           const SizedBox(height: 20),
-          Text(
-            "Keranjangmu kosong",
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
-            ),
-          ),
-          Text(
-            "Pilih alat di beranda untuk meminjam",
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: Colors.grey,
-            ),
-          ),
+          Text("Keranjang Masih Kosong", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text("Belum ada alat yang kamu pilih untuk dipinjam.", 
+               textAlign: TextAlign.center,
+               style: GoogleFonts.poppins(color: Colors.grey, fontSize: 13)),
         ],
       ),
     );
+  }
+
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _batasPengembalian,
+      firstDate: DateTime.now().add(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(primary: Color(0xFF1A314D), onPrimary: Colors.white, surface: Colors.white),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) setState(() => _batasPengembalian = picked);
   }
 }

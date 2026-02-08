@@ -4,7 +4,9 @@ import 'package:inventory_alat/service/peminjaman_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfilPeminjam extends StatefulWidget {
-  const ProfilPeminjam({super.key});
+  final VoidCallback onLogout;
+
+  const ProfilPeminjam({super.key, required this.onLogout});
 
   @override
   State<ProfilPeminjam> createState() => _ProfilPeminjamState();
@@ -26,61 +28,73 @@ class _ProfilPeminjamState extends State<ProfilPeminjam> {
 
   Future<void> _loadProfile() async {
     setState(() => _isLoading = true);
-
     try {
       final profile = await _service.getUserProfile();
       setState(() {
-        _username = profile?['username'] ?? 'Peminjam';
-        _class = profile?['class'] ?? '-';
+        _username = profile?['username'] ?? 'Nama Pengguna';
+        _class = profile?['class'] ?? 'Kelas';
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading profile: $e');
       setState(() => _isLoading = false);
     }
   }
 
   Future<void> _handleLogout() async {
-    final confirm = await showDialog<bool>(
+    final confirm = await showGeneralDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Konfirmasi Keluar',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Apakah Anda yakin ingin keluar?',
-          style: GoogleFonts.poppins(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: GoogleFonts.poppins()),
+      barrierDismissible: true,
+      barrierLabel: '',
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (context, anim1, anim2) => Container(),
+      transitionBuilder: (context, anim1, anim2, child) {
+        return Transform.scale(
+          scale: anim1.value,
+          child: Opacity(
+            opacity: anim1.value,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Text('Konfirmasi Keluar', 
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+              content: Text('Apakah Anda yakin ingin mengakhiri sesi ini?', 
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins()),
+              actionsAlignment: MainAxisAlignment.spaceEvenly,
+              actions: [
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey[200],
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: Text('Batal', style: GoogleFonts.poppins(color: Colors.black87)),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: Text('Keluar', style: GoogleFonts.poppins(color: Colors.white)),
+                ),
+              ],
+            ),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text('Keluar', style: GoogleFonts.poppins()),
-          ),
-        ],
-      ),
+        );
+      },
     );
 
     if (confirm == true) {
       try {
         await _supabase.auth.signOut();
-        // Navigate to login page
-        // You need to implement navigation to your login page
-        if (mounted) {
-          // Navigator.of(context).pushReplacementNamed('/login');
-        }
+        widget.onLogout(); 
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gagal keluar: $e'),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text('Gagal keluar: $e'), backgroundColor: Colors.red),
           );
         }
       }
@@ -90,175 +104,157 @@ class _ProfilPeminjamState extends State<ProfilPeminjam> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: Column(
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                height: 220,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1A314D),
-                  borderRadius: BorderRadius.vertical(
-                    bottom: Radius.circular(40),
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    "Profil Saya",
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const Positioned(
-                bottom: -50,
-                child: CircleAvatar(
-                  radius: 60,
-                  backgroundColor: Colors.white,
-                  child: CircleAvatar(
-                    radius: 55,
-                    backgroundColor: Color(0xFFD1DCEB),
-                    child: Icon(
-                      Icons.person,
-                      size: 60,
-                      color: Color(0xFF1A314D),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 60),
-          
-          // Profile info
-          if (_isLoading)
-            const CircularProgressIndicator()
-          else ...[
-            Text(
-              _username ?? 'Loading...',
-              style: GoogleFonts.poppins(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1A314D),
-              ),
-            ),
-            Text(
-              _class ?? '-',
-              style: GoogleFonts.poppins(
-                color: Colors.grey,
-                fontSize: 14,
-              ),
-            ),
-          ],
-          
-          const SizedBox(height: 30),
-          
-          // Menu items
-          Expanded(
-            child: ListView(
+      backgroundColor: const Color(0xFFF8FAFD),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // HEADER SECTION
+            _buildHeader(),
+            
+            const SizedBox(height: 50),
+            
+            // USER INFO CARD
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 25),
-              children: [
-                _buildProfileMenu(
-                  Icons.person_outline,
-                  "Informasi Akun",
-                  () {
-                    // Navigate to account info
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Fitur dalam pengembangan'),
-                      ),
-                    );
-                  },
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
-                _buildProfileMenu(
-                  Icons.lock_outline,
-                  "Ubah Password",
-                  () {
-                    // Navigate to change password
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Fitur dalam pengembangan'),
-                      ),
-                    );
-                  },
+                child: _isLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : Column(
+                  children: [
+                    _buildInfoTile(Icons.person_rounded, "Nama Lengkap", _username ?? '-'),
+                    const Divider(height: 30, thickness: 0.5),
+                    _buildInfoTile(Icons.school_rounded, "Kelas / Jabatan", _class ?? '-'),
+                  ],
                 ),
-                _buildProfileMenu(
-                  Icons.settings_outlined,
-                  "Pengaturan",
-                  () {
-                    // Navigate to settings
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Fitur dalam pengembangan'),
-                      ),
-                    );
-                  },
-                ),
-                _buildProfileMenu(
-                  Icons.logout,
-                  "Keluar",
-                  _handleLogout,
-                  color: Colors.red,
-                ),
-              ],
+              ),
             ),
-          )
-        ],
+            
+            const SizedBox(height: 40),
+            
+            // LOGOUT BUTTON
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 25),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _handleLogout,
+                  icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                  label: Text("Keluar dari Akun", 
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.white
+                    )),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A314D),
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    elevation: 5,
+                    shadowColor: const Color(0xFF1A314D).withOpacity(0.3),
+                  ),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            Text("Versi 1.0.0", 
+              style: GoogleFonts.poppins(color: Colors.grey[400], fontSize: 12)),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildProfileMenu(
-    IconData icon,
-    String title,
-    VoidCallback onTap, {
-    Color? color,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(15),
-          child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 10,
-                ),
-              ],
+  Widget _buildHeader() {
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          height: 240,
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1A314D), Color(0xFF2C5384)],
             ),
-            child: Row(
-              children: [
-                Icon(icon, color: color ?? const Color(0xFF1A314D)),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w500,
-                      color: color ?? Colors.black87,
-                    ),
-                  ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(50)),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Text(
+                "Profil Peminjam",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
                 ),
-                const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
-              ],
+              ),
             ),
           ),
         ),
-      ),
+        Positioned(
+          bottom: -40,
+          child: Container(
+            padding: const EdgeInsets.all(5),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: CircleAvatar(
+              radius: 55,
+              backgroundColor: const Color(0xFFE9EEF5),
+              child: Icon(Icons.person_rounded, 
+                size: 65, 
+                color: const Color(0xFF1A314D).withOpacity(0.8)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoTile(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F4F9),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: const Color(0xFF1A314D), size: 24),
+        ),
+        const SizedBox(width: 15),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12)),
+            Text(value, 
+              style: GoogleFonts.poppins(
+                fontSize: 16, 
+                fontWeight: FontWeight.w600,
+                color: Colors.black87
+              )),
+          ],
+        )
+      ],
     );
   }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:inventory_alat/auth/login_page.dart';
 import 'package:inventory_alat/peminjam/models/peminjam_models.dart';
 import 'package:inventory_alat/peminjam/screen/beranda.dart';
-import 'package:inventory_alat/peminjam/screen/cari.dart';
 import 'package:inventory_alat/peminjam/screen/profil.dart';
 import 'package:inventory_alat/peminjam/screen/riwayat.dart';
 import 'package:inventory_alat/peminjam/screen/checkout.dart';
@@ -16,213 +16,212 @@ class MainNavigationPeminjam extends StatefulWidget {
 
 class _MainNavigationPeminjamState extends State<MainNavigationPeminjam> {
   int _currentIndex = 0;
-
-  // Global State untuk keranjang
   final List<KeranjangItem> _keranjang = [];
 
-  // Add item to cart
+  // --- LOGIKA KERANJANG ---
   void _addToKeranjang(Alat alat) {
     setState(() {
-      // Check if item already in cart
-      final existingIndex = _keranjang.indexWhere(
-        (item) => item.alat.idAlat == alat.idAlat,
-      );
+      final existingIndex = _keranjang.indexWhere((item) => item.alat.idAlat == alat.idAlat);
 
       if (existingIndex >= 0) {
-        // Item exists, increase quantity if possible
         if (_keranjang[existingIndex].canIncrease) {
           _keranjang[existingIndex].jumlah++;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${alat.namaAlat} ditambahkan (${_keranjang[existingIndex].jumlah} unit)',
-              ),
-              duration: const Duration(seconds: 1),
-            ),
-          );
+          _showCustomSnackBar('${alat.namaAlat} ditambahkan (${_keranjang[existingIndex].jumlah})', Colors.green);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Stok ${alat.namaAlat} tidak mencukupi'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          _showCustomSnackBar('Stok ${alat.namaAlat} habis', Colors.orange);
         }
       } else {
-        // Add new item
         _keranjang.add(KeranjangItem(alat: alat, jumlah: 1));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${alat.namaAlat} ditambahkan ke keranjang!'),
-            duration: const Duration(seconds: 1),
+        _showCustomSnackBar('${alat.namaAlat} masuk keranjang!', Colors.blue);
+      }
+    });
+  }
+
+  void _showCustomSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.poppins(fontSize: 12, color: Colors.white)),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(15),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
+  // --- LOGIKA LOGOUT ---
+  void _handleLogout() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text("Logout", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        content: Text("Apakah Anda yakin ingin keluar?", style: GoogleFonts.poppins()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Batal", style: GoogleFonts.poppins(color: Colors.grey)),
           ),
-        );
-      }
-    });
-  }
-
-  // Remove item from cart
-  void _removeFromKeranjang(int index) {
-    setState(() {
-      _keranjang.removeAt(index);
-    });
-  }
-
-  // Update item quantity
-  void _updateQuantity(int index, int newQuantity) {
-    setState(() {
-      if (newQuantity > 0 && newQuantity <= _keranjang[index].maxJumlah) {
-        _keranjang[index].jumlah = newQuantity;
-      }
-    });
-  }
-
-  // Clear cart after checkout
-  void _clearKeranjang() {
-    setState(() {
-      _keranjang.clear();
-    });
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+                (route) => false,
+              );
+            },
+            child: Text("Keluar", style: GoogleFonts.poppins(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       backgroundColor: const Color(0xFFF8F9FA),
 
-      // 1. TOMBOL CHECKOUT MELAYANG DI TENGAH
+      // 1. FAB: KERANJANG DI TENGAH
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           if (_keranjang.isNotEmpty) {
-            // Navigate to checkout page
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => KeranjangPeminjam(
                   items: _keranjang,
-                  onRemove: _removeFromKeranjang,
-                  onUpdateQuantity: _updateQuantity,
-                  onClearCart: _clearKeranjang,
+                  onRemove: (i) => setState(() => _keranjang.removeAt(i)),
+                  onUpdateQuantity: (i, q) => setState(() => _keranjang[i].jumlah = q),
+                  onClearCart: () => setState(() => _keranjang.clear()),
                 ),
               ),
             );
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Keranjangmu masih kosong."),
-                duration: Duration(seconds: 2),
-              ),
-            );
+            _showCustomSnackBar("Keranjangmu masih kosong.", Colors.black87);
           }
         },
         backgroundColor: const Color(0xFF1A314D),
+        elevation: 6,
         shape: const CircleBorder(),
-        elevation: 8,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            const Icon(Icons.shopping_cart_rounded, color: Colors.white),
-            if (_keranjang.isNotEmpty)
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1),
-                  ),
-                  child: Text(
-                    _keranjang.length.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
+        child: Badge(
+          isLabelVisible: _keranjang.isNotEmpty,
+          label: Text(_keranjang.length.toString(), style: const TextStyle(color: Colors.white)),
+          backgroundColor: Colors.redAccent,
+          child: const Icon(Icons.shopping_basket_rounded, color: Colors.white, size: 28),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+
+      // 2. BOTTOM NAVBAR: RAPI & SIMETRIS
+      bottomNavigationBar: BottomAppBar(
+        height: 70,
+        color: Colors.white,
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8,
+        elevation: 20,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            // Sisi Kiri
+            Row(
+              children: [
+                _buildNavItem(Icons.home_rounded, "Beranda", 0),
+                _buildNavItem(Icons.assignment_rounded, "Riwayat", 1),
+              ],
+            ),
+            // Sisi Kanan
+            Row(
+              children: [
+                _buildNavItem(Icons.person_rounded, "Profil", 2),
+                _buildNavItem(Icons.logout_rounded, "Keluar", 3),
+              ],
+            ),
           ],
         ),
       ),
 
-      // 2. LOKASI TOMBOL DI TENGAH NAVBAR
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      // 3. BODY DENGAN FADE TRANSITION
+      body: PageTransitionSwitcher(
+        child: _buildPageContent(),
+      ),
+    );
+  }
 
-      // 3. CUSTOM NAVBAR DENGAN LUBANG (NOTCH)
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
-        clipBehavior: Clip.antiAlias,
-        elevation: 8,
-        color: Colors.white,
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+  Widget _buildNavItem(IconData icon, String label, int index) {
+    // Tombol logout (index 3) tidak mengubah currentIndex tapi memicu fungsi logout
+    bool isActive = _currentIndex == index;
+    bool isLogout = index == 3;
+
+    return SizedBox(
+      width: MediaQuery.of(context).size.width / 5, // Membagi layar secara rata
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            if (isLogout) {
+              _handleLogout();
+            } else {
+              setState(() => _currentIndex = index);
+            }
+          },
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Sisi Kiri
-              _buildNavItem(Icons.home_filled, "Beranda", 0),
-              _buildNavItem(Icons.search, "Cari", 1),
-
-              const SizedBox(width: 40), // Ruang kosong untuk tombol tengah
-              // Sisi Kanan
-              _buildNavItem(Icons.history_rounded, "Riwayat", 2),
-              _buildNavItem(Icons.person, "Profil", 3),
+              Icon(
+                icon,
+                color: isActive ? const Color(0xFF1A314D) : Colors.grey[400],
+                size: 26,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  color: isActive ? const Color(0xFF1A314D) : Colors.grey[400],
+                ),
+              ),
             ],
           ),
         ),
       ),
-
-      // Konten Halaman
-      body: _buildPageContent(),
     );
   }
 
-  // Helper untuk item Navbar
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    bool isActive = _currentIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width / 5,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: isActive ? const Color(0xFF1A314D) : Colors.grey[600],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 10,
-                color: isActive ? const Color(0xFF1A314D) : Colors.grey[600],
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Memilih konten halaman berdasarkan _currentIndex
   Widget _buildPageContent() {
     switch (_currentIndex) {
-      case 0:
-        return BerandaPeminjam(onAddToCart: _addToKeranjang);
-      case 1:
-        return CariPeminjam(onAddToCart: _addToKeranjang);
-      case 2:
-        return const RiwayatPeminjam();
-      case 3:
-        return const ProfilPeminjam();
-      default:
-        return Container();
+      case 0: return BerandaPeminjam(onAddToCart: _addToKeranjang);
+      case 1: return const RiwayatPeminjam();
+      case 2: return ProfilPeminjam(onLogout: _handleLogout);
+      default: return BerandaPeminjam(onAddToCart: _addToKeranjang);
     }
+  }
+}
+
+// Helper sederhana untuk transisi halaman agar tidak kaku
+class PageTransitionSwitcher extends StatelessWidget {
+  final Widget child;
+  const PageTransitionSwitcher({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      child: child,
+    );
   }
 }

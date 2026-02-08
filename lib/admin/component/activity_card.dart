@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:inventory_alat/admin/screen/log_aktivitas.dart';
 
 class ActivityCard extends StatelessWidget {
   final int totalPeminjamanHariIni;
@@ -58,9 +59,12 @@ class ActivityCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: onTapCekLaporan,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => RiwayatPage()),
+            ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white.withOpacity(0.2), // Lebih transparan agar elegan
+              backgroundColor: Colors.white.withOpacity(0.2),
               foregroundColor: Colors.white,
               elevation: 0,
               minimumSize: const Size(double.infinity, 50),
@@ -76,7 +80,7 @@ class ActivityCard extends StatelessWidget {
                 fontSize: 16,
               ),
             ),
-          )
+          ),
         ],
       ),
     );

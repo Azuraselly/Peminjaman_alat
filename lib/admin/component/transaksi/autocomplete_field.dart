@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:inventory_alat/colors.dart';
 
 class AutocompleteField extends StatelessWidget {
   final String label;
@@ -33,7 +34,7 @@ class AutocompleteField extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 10,
               fontWeight: FontWeight.w800,
-              color: Colors.grey[600],
+              color: AppColors.abumud,
             ),
           ),
         ),

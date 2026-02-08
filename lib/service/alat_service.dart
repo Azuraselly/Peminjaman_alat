@@ -12,7 +12,7 @@ class AlatService {
   try {
     final String fileName =
         'alat_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final String path = 'alat/$fileName'; // <-- penting: folder biar rapi
+    final String path = 'alat/$fileName'; 
 
     if (kIsWeb && imageSource is Uint8List) {
       await supabase.storage.from('gambar').uploadBinary(

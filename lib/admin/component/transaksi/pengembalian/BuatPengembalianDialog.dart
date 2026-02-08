@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:inventory_alat/colors.dart';
 import 'package:inventory_alat/service/pengembalian_service.dart';
-import 'package:inventory_alat/admin/component/alat/autocomplete_field.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:inventory_alat/admin/component/transaksi/autocomplete_field.dart';
 
 class BuatPengembalianDialog extends StatefulWidget {
   const BuatPengembalianDialog({super.key});
@@ -39,7 +39,7 @@ class _BuatPengembalianDialogState extends State<BuatPengembalianDialog> {
       _showError('Pilih tanggal pengembalian');
       return;
     }
- 
+
     setState(() => _isLoading = true);
 
     final success = await _pengembalianService.createPengembalian(
@@ -91,7 +91,7 @@ class _BuatPengembalianDialogState extends State<BuatPengembalianDialog> {
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.grey.shade100,
+                      backgroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -111,19 +111,21 @@ class _BuatPengembalianDialogState extends State<BuatPengembalianDialog> {
 
               // AUTOCOMPLETE UNTUK ID PEMINJAMAN
               AutocompleteField(
-                label: "ID PEMINJAMAN",
-                hint: "Cari ID atau nama peminjam...",
+                label: "ID PEMINJAMAN / NAMA",
+                hint: "Cari ID atau nama...",
                 controller: _idPeminjamanController,
-                displayKey: 'id_peminjaman',
+                displayKey: 'search_text',
                 onSearch: (query) =>
                     _pengembalianService.searchPeminjamanAktif(query),
-                onSelected: (peminjaman) async {
+                onSelected: (selection) {
                   setState(() {
-                    _selectedPeminjaman = peminjaman;
-                    _idPeminjamanController.text = peminjaman['id_peminjaman']
+                    // Simpan data selection (yang isinya flat: id_peminjaman, username, nama_alat)
+                    _selectedPeminjaman = selection;
+
+                    // Update TextField agar hanya menampilkan ID saja
+                    _idPeminjamanController.text = selection['id_peminjaman']
                         .toString();
                   });
-                  await _loadPreviewData(peminjaman['id_peminjaman']);
                 },
               ),
               const SizedBox(height: 15),
@@ -144,13 +146,12 @@ class _BuatPengembalianDialogState extends State<BuatPengembalianDialog> {
                       style: GoogleFonts.poppins(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF3B6790),
                       ),
                     ),
                     const SizedBox(height: 5),
                     Text(
                       _selectedPeminjaman != null
-                          ? "${_selectedPeminjaman!['alat']['nama_alat']} - ${_selectedPeminjaman!['users']['username']}"
+                          ? "${_selectedPeminjaman?['nama_alat'] ?? ''} - ${_selectedPeminjaman?['username'] ?? ''}"
                           : "Pilih peminjaman untuk melihat detail",
                       style: GoogleFonts.poppins(
                         fontSize: 14,
@@ -194,7 +195,7 @@ class _BuatPengembalianDialogState extends State<BuatPengembalianDialog> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: AppColors.abumud,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: DropdownButtonHideUnderline(

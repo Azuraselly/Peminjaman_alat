@@ -184,7 +184,6 @@ class DetailPeminjamanPage extends StatelessWidget {
 
   Widget _buildInfoTile(IconData icon, String title, String subtitle) {
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: const Color(0xFFF1F1F1), borderRadius: BorderRadius.circular(15)),
       child: Row(
         children: [

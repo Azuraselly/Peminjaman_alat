@@ -41,11 +41,10 @@ class _CustomHeaderState extends State<CustomHeader> {
     }
   }
 
-  // 2. Real-time Listen ke tabel log_aktivitas
   void _listenToLogs() {
     Supabase.instance.client
-        .from('log_aktivitas')
-        .stream(primaryKey: ['id']) // Pastikan nama primary key sesuai di DB
+        .from('log_aktifitas') 
+        .stream(primaryKey: ['id'])
         .listen((data) {
           if (data.isNotEmpty && mounted) {
             setState(() => _hasNewActivity = true);
@@ -125,7 +124,11 @@ class _CustomHeaderState extends State<CustomHeader> {
               color: AppColors.abumud.withOpacity(0.25),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.notifications_none, color: Colors.white, size: 24),
+            child: const Icon(
+              Icons.notifications_none,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
           if (_hasNewActivity)
             Positioned(
@@ -183,7 +186,10 @@ class _CustomHeaderState extends State<CustomHeader> {
         title: const Text("Konfirmasi"),
         content: const Text("Yakin ingin keluar?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Batal"),
+          ),
           ElevatedButton(
             onPressed: () async {
               await Supabase.instance.client.auth.signOut();
